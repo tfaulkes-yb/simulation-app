@@ -1,0 +1,26 @@
+spring:
+  jpa:
+    open-in-view: false
+  flyway:
+    enabled: false
+  datasource:
+    hikari:
+      username: yugabyte
+      password: yugabyte
+      maximumPoolSize: 100
+      maxLifeTime: 3600000
+      data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
+      data-source-properties:
+        serverName: 172.161.54.135
+        portNumber: 5433
+        databaseName: yugabyte
+        additionalEndpoints: 172.161.20.134:5433,172.161.24.230:5433,172.161.25.47:5433,172.161.29.83:5433,172.161.30.23:5433,172.161.32.150:5433,172.161.32.53:5433,172.161.33.83:5433,172.161.41.172:5433,172.161.41.183:5433,172.161.52.38:5433,172.161.55.42:5433,172.161.60.243:5433,172.161.61.95:5433
+        topologyKeys: "aws.us-east-2.us-east-2a,aws.us-east-2.us-east-2b,aws.us-east-2.us-east-2c"
+
+
+logging.level:
+  java.sql: DEBUG
+  com.zaxxer.hikari: TRACE
+  com.yugabyte: ERROR
+  org.hibernate.SQL: DEBUG
+  org.hibernate.type.descriptor.sql.BasicBinder: TRACE

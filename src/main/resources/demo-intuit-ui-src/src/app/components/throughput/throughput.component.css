@@ -1,0 +1,6 @@
+figure {
+    width: calc(47% - 20px);
+    height: 31%;
+    margin: 10px;
+    display: inline-block;
+}
