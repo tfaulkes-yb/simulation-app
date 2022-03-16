@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.yugabyte</groupId>
-	<artifactId>demo-intuit</artifactId>
+	<artifactId>workload-simulation-demo-app</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>demo-intuit</name>
+	<name>workload-simulation-demo-app</name>
 	<description>Demo project for Spring Boot</description>
 	<properties>
 		<java.version>1.8</java.version>
@@ -68,7 +68,7 @@
 			<resource>
 				<directory>src/main/resources</directory>
 				<excludes>
-					<exclude>demo-intuit-ui-src/**</exclude>
+					<exclude>workload-simulation-ui-src/**</exclude>
 				</excludes>
 			</resource>
 		</resources>

@@ -4,7 +4,7 @@
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev -DidCounter=1
 
 ### Production Environment: 
-java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar demo-intuit-0.0.1-SNAPSHOT.jar
+java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar workload-simulation-demo-app-0.0.1-SNAPSHOT.jar
 
 - If you want to run on another port:
   - -Dserver.port=8081

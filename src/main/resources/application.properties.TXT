@@ -1,8 +1,0 @@
-
-# database init for YugabyteDB
-#database=yugabytedb
-#spring.datasource.url=${YBDB_URL:jdbc:postgresql://localhost:5433/yugabyte}
-#spring.datasource.username=${YBDB_USER:yugabyte}
-#spring.datasource.password=${YBDB_PASS:yugabyte}
-#spring.datasource.load-balance=true
-spring.datasource.initialization-mode=${DB_INIT:always}

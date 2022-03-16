@@ -1,7 +1,7 @@
 # Read Me First
 The following was discovered as part of building this project:
 
-* The original package name 'com.yugabyte.demo-intuit' is invalid and this project uses 'com.yugabyte.demointuit' instead.
+* The original package name 'com.yugabyte.demo-intuit' is invalid and this project uses 'com.yugabyte.simulation' instead.
 
 # Getting Started
 
