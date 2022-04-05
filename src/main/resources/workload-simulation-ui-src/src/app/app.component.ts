@@ -1,4 +1,3 @@
-import { TransitiveCompileNgModuleMetadata } from '@angular/compiler';
 import { Component, EventEmitter, HostListener } from '@angular/core';
 import { TimingData } from './model/timing-data.model';
 import { TimingPoint } from './model/timing-point.model';
@@ -11,6 +10,15 @@ import { YugabyteDataSourceService } from './services/yugabyte-data-source.servi
 })
 
 export class AppComponent {
+  status = "This is a test messsage";
+  updateThreads : number = 20;
+  updateRequests : number = 10000;
+  statusCheckThreads : number = 10;
+  statusCheckRequests : number = 40000;
+  submissionThreads: number = 5;
+  submissionRequests : number = 50000;
+
+  showDialog = false;
   title = 'workload-simulation-ui-src';
   currentData : TimingData = {STATUS : [], SUBMISSION : []};
   startTime = 0;
@@ -88,4 +96,68 @@ export class AppComponent {
     let change = 1+(amount/1200);
     this.duration = Math.floor(Math.max(this.minDuration, Math.min(this.maxDuration, this.duration * change)));
   }
+
+  displayDialog() {
+    this.status = "";
+    this.showDialog = true;
+  }
+
+  closeDialog() {
+    this.showDialog = false;
+  }
+
+  createTables() {
+    this.status = "Creating tables...";
+    this.dataSource.createTables().subscribe(data => {
+      this.status = "Table creation complete.";
+    },
+    error => {
+      this.status = "Table creation failed."
+    });
+  }
+
+  truncateTables() {
+    this.status = "Truncating tables...";
+    this.dataSource.createTables().subscribe(data => {
+      this.status = "Table truncation complete.";
+    },
+    error => {
+      this.status = "Table truncation failed."
+    });
+  }
+
+  startUpdateWorkload(numThreads : number, numRequests : number) {
+    this.status = "Update workload starting...";
+    this.dataSource.startUpdateWorkload(numThreads, numRequests).subscribe(data => {
+      this.status = "Update workload complete";
+    },
+    error => {
+      this.status = "Update workload failed."
+    });
+    this.status = "Update workload started.";
+  }
+
+  startStatusCheckWorkload(numThreads : number, numRequests : number) {
+    this.status = "Status check workload starting...";
+    this.dataSource.startStatusChecksWorkload(numThreads, numRequests).subscribe(data => {
+      this.status = "Status check workload complete";
+    },
+    error => {
+      this.status = "Status check workload failed."
+    });
+    this.status = "Status check workload started.";
+  }
+
+  startSubmissionsWorkload(numThreads : number, numRequests : number) {
+    this.status = "Submissions workload starting...";
+    this.dataSource.startSubmissionsWorkload(numThreads, numRequests).subscribe(data => {
+      this.status = "Submissions workload complete";
+    },
+    error => {
+      this.status = "Submissions workload failed."
+    });
+    this.status = "Submissions workload started.";
+  }
+
+
 }

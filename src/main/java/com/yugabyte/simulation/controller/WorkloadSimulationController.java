@@ -25,6 +25,11 @@ public class WorkloadSimulationController {
         return workloadSimulationDAO.createDBTableIfNeeded();
     }
 
+    @GetMapping("/api/truncate-table")
+    public int truncateTable(){
+        return workloadSimulationDAO.truncateDBTable();
+    }
+
     @GetMapping("/api/simulate-submissions/{threads}/{numberOfSubmissions}")
     public void simulateSubmissions(@PathVariable int threads, @PathVariable int numberOfSubmissions){
         // We need to invoke N threads.
@@ -74,7 +79,7 @@ public class WorkloadSimulationController {
 
 
     @GetMapping("/api/simulate-updates/{threads}/{numberOfTimesToRerunUpdateOnSameRecord}")
-    public void simulateUpdates(@PathVariable int threads, @PathVariable int numberOfTimesToRerunUpdateOnSameRecord){
+    public int simulateUpdates(@PathVariable int threads, @PathVariable int numberOfTimesToRerunUpdateOnSameRecord){
         // We need to invoke N threads.
         try {
             ExecutorService mExecutorService = Executors.newFixedThreadPool(threads);
@@ -90,9 +95,11 @@ public class WorkloadSimulationController {
             }
             mExecutorService.awaitTermination(120, TimeUnit.MINUTES);
             System.out.printf("Simulation of Updates completed!\n");
+            return 0;
         }
         catch (Exception e) {
             e.printStackTrace();
+            return -1;
         }
     }
 

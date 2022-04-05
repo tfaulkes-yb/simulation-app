@@ -34,4 +34,21 @@ export class YugabyteDataSourceService {
   getTimingResults(afterTime : number) : Observable<TimingData> {
     return this.http.get<TimingData>(this.baseUrl + "api/getResults/" + afterTime);
   }
+
+  createTables() : Observable<number> {
+    return this.http.get<number>(this.baseUrl + "api/create-table");
+  }
+
+  startUpdateWorkload(numThreads : number, numRequests : number) {
+    return this.http.get<number>(this.baseUrl + 'api/simulate-updates/' + numThreads + '/' + numRequests);
+  }
+
+  startStatusChecksWorkload(numThreads : number, numRequests : number) {
+    return this.http.get<number>(this.baseUrl + 'api/simulate-status-checks/' + numThreads + '/' + numRequests);
+  }
+
+  startSubmissionsWorkload(numThreads : number, numRequests : number) {
+    return this.http.get<number>(this.baseUrl + 'api/simulate-submissions/' + numThreads + '/' + numRequests);
+  }
+
 }

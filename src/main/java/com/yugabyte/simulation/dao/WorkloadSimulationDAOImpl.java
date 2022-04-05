@@ -25,7 +25,7 @@ public class WorkloadSimulationDAOImpl implements WorkloadSimulationDAO {
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkloadSimulationDAOImpl.class);
 
     @Override
-    public void simulateSubmission(Timer mainTimer) throws  Exception{
+    public int simulateSubmission(Timer mainTimer) throws  Exception{
         // Each submission does 10 selects.
         // Lets get list of Random values.
         List<Long> listOfRandomIds = GeneralUtility.getRandomIds(10);
@@ -104,10 +104,11 @@ public class WorkloadSimulationDAOImpl implements WorkloadSimulationDAO {
                 }
             }
         }
+        return 0;
     }
 
     @Override
-    public void simulateStatus(Timer mainTimer) throws Exception {
+    public int simulateStatus(Timer mainTimer) throws Exception {
         // Here we are going to perform 20 selects and 20 updates
         Timer timer = mainTimer.timeSubPortion("select-query");
         // Lets get list of Random values.
@@ -169,10 +170,11 @@ public class WorkloadSimulationDAOImpl implements WorkloadSimulationDAO {
                 e.printStackTrace();
             }
         }
+        return 0;
     }
 
     @Override
-    public void simulateUpdates(Timer mainTimer, int numberOfTimesToRunUpdateOnSameRecord) throws Exception {
+    public int simulateUpdates(Timer mainTimer, int numberOfTimesToRunUpdateOnSameRecord) throws Exception {
         // Get a random number between 1 and 10000. Note that this number may or may not exist is database yet.
         long randomFilingId = GeneralUtility.randomLongVal(1,10000);
         // Same Record will keep getting updated over and over for n number of times.
@@ -189,6 +191,7 @@ public class WorkloadSimulationDAOImpl implements WorkloadSimulationDAO {
                 Thread.sleep(10);
             }
         }
+        return 0;
     }
 
     @Override
@@ -200,6 +203,17 @@ public class WorkloadSimulationDAOImpl implements WorkloadSimulationDAO {
         jdbcTemplate.execute(DAOUtil.CREATE_TABLE_TRANSMISSION);
         jdbcTemplate.execute(DAOUtil.CREATE_TABLE_TRANSMISSION_FILING);
         jdbcTemplate.execute(DAOUtil.CREATE_TABLE_TRANSMIT_DATA_VALUE);
+        return 0;
+    }
+
+    @Override
+    public int truncateDBTable() {
+        jdbcTemplate.execute(DAOUtil.TRUNCATE_TABLE_FILING);
+        jdbcTemplate.execute(DAOUtil.TRUNCATE_TABLE_DL_FILING);
+        jdbcTemplate.execute(DAOUtil.TRUNCATE_TABLE_ROUTING_NUMBER);
+        jdbcTemplate.execute(DAOUtil.TRUNCATE_TABLE_TRANSMISSION);
+        jdbcTemplate.execute(DAOUtil.TRUNCATE_TABLE_TRANSMISSION_FILING);
+        jdbcTemplate.execute(DAOUtil.TRUNCATE_TABLE_TRANSMIT_DATA_VALUE);
         return 0;
     }
 

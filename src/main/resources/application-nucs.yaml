@@ -8,7 +8,7 @@ spring:
       username: yugabyte
       password: 
       maximumPoolSize: 50
-      maxLifeTime: 300000
+      maxLifeTime: 3000000
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
       data-source-properties:
         serverName: 192.168.86.231

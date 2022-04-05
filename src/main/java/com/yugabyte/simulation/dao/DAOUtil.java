@@ -450,5 +450,10 @@ public class DAOUtil {
             ")\n" +
             ";";
 
-
+    protected static final String TRUNCATE_TABLE_FILING = "TRUNCATE TABLE FILING;";
+    protected static final String TRUNCATE_TABLE_DL_FILING = "TRUNCATE TABLE DL_FILING;";
+    protected static final String TRUNCATE_TABLE_ROUTING_NUMBER = "TRUNCATE TABLE ROUTING_NUMBER;";
+    protected static final String TRUNCATE_TABLE_TRANSMISSION = "TRUNCATE TABLE TRANSMISSION;";
+    protected static final String TRUNCATE_TABLE_TRANSMISSION_FILING = "TRUNCATE TABLE TRANSMISSION_FILING;";
+    protected static final String TRUNCATE_TABLE_TRANSMIT_DATA_VALUE = "TRUNCATE TABLE TRANSMIT_DATA_VALUE;";
 }

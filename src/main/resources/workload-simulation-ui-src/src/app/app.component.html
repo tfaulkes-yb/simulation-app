@@ -1,9 +1,94 @@
 <div class="outer" (wheel)="onMouseWheel($event)">
-  <div style="height: 64%; width: 49%; margin: 0; padding: 0; display: inline-block; float: left;">
+  <div style="height: 60%; width: 50%; margin: 0; padding: 0; display: inline-block; float: left;">
     <app-network-diagram></app-network-diagram>
   </div>
-    <app-throughput [idName]="'submissionLatency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="SUBMISSION"></app-throughput> 
-    <app-throughput [idName]="'statusLatency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="STATUS"></app-throughput> 
+  <app-throughput [idName]="'submissionLatency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="SUBMISSION"></app-throughput> 
+  <app-throughput [idName]="'statusLatency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="STATUS"></app-throughput> 
   <app-throughput [idName]="'submissionThroughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="SUBMISSION"></app-throughput> 
   <app-throughput [idName]="'statusThroughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="STATUS"></app-throughput> 
 </div>
+<div style="position: absolute; top: 20px; left: 20px; width: 20px; height: 20px; cursor: pointer;" (click)="displayDialog()">
+  <span class="fa-solid fa-bars"></span>
+</div>
+
+
+<p-dialog [(visible)]="showDialog" header="Workload Management" [modal]="true" [style]="{width: '50vw', height: '50%'}" 
+      [draggable]="true" [resizable]="false" [closable]="false" [focusOnShow]="true">
+
+  <p-tabView>
+    <p-tabPanel header="Table Operations" leftIcon="fa-solid fa-table">
+      <div>
+        <p-button icon="fa-solid fa-table-list" (click)="createTables()" label="Create Tables"></p-button>
+        Create the tables for the operations if they do not already exist
+      </div>
+      <div class="pt-4">
+        <p-button icon="fa-solid fa-table-columns" (click)="truncateTables()" label="Truncate Tables"></p-button>
+        Truncates the tables. Asssumes the tables exist.
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Submissions Workload" leftIcon="fa-solid fa-right-to-bracket">
+      <div>
+        <div>
+          Threads: {{submissionThreads}}
+          <p></p>
+          <p-slider [(ngModel)]="submissionThreads" [min]="1" [max]="128" ></p-slider>
+        </div>
+        <div class="mt-2 pt-4">
+          Number of Requests: {{submissionRequests}}
+          <p></p>
+          <p-slider [(ngModel)]="submissionRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
+        </div>
+        <div class="pt-4">
+          <p-button icon="fa-solid fa-right-to-bracket" (click)="startSubmissionsWorkload(submissionThreads, submissionRequests)" label="Launch Submission Workload"></p-button>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Update Workload" leftIcon="fa-solid fa-person-running">
+      <div>
+        <div>
+          Threads: {{updateThreads}}
+          <p></p>
+          <p-slider [(ngModel)]="updateThreads" [min]="1" [max]="128" ></p-slider>
+        </div>
+        <div class="mt-2 pt-4">
+          Number of Requests: {{updateRequests}}
+          <p></p>
+          <p-slider [(ngModel)]="updateRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
+        </div>
+        <div class="pt-4">
+          <p-button icon="fa-solid fa-person-running" (click)="startUpdateWorkload(updateThreads, updateRequests)" label="Launch Update Workload"></p-button>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Status Check Workload" leftIcon="fa-solid fa-circle-question">
+      <div>
+        <div>
+          Threads: {{statusCheckThreads}}
+          <p></p>
+          <p-slider [(ngModel)]="statusCheckThreads" [min]="1" [max]="128" ></p-slider>
+        </div>
+        <div class="mt-2 pt-4">
+          Number of Requests: {{statusCheckRequests}}
+          <p></p>
+          <p-slider [(ngModel)]="statusCheckRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
+        </div>
+        <div class="pt-4">
+          <p-button icon="fa-solid fa-person-running" (click)="startStatusCheckWorkload(statusCheckThreads, statusCheckRequests)" label="Launch Status Check Workload"></p-button>
+        </div>
+      </div>
+    </p-tabPanel>
+
+  </p-tabView>
+
+  <div class="status" style="color: blue">
+    {{status}}
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button icon="pi pi-check" (click)="closeDialog()" label="Close"></p-button>
+  </ng-template>
+</p-dialog>
+
+
