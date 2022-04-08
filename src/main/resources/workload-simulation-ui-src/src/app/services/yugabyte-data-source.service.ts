@@ -14,7 +14,7 @@ export class YugabyteDataSourceService {
   baseUrl : string;
   testEnv = false;
   constructor(private http: HttpClient) {
-    if (this.testEnv) { 
+    if (this.testEnv) {
       this.baseUrl = `${PROTOCOL}://localhost:${PORT}/`;
     }
     else {
@@ -30,13 +30,17 @@ export class YugabyteDataSourceService {
       return this.http.get<YBServerModel[]>(this.baseUrl + "api/ybserverinfo");
     }
   }
-  
+
   getTimingResults(afterTime : number) : Observable<TimingData> {
     return this.http.get<TimingData>(this.baseUrl + "api/getResults/" + afterTime);
   }
 
   createTables() : Observable<number> {
     return this.http.get<number>(this.baseUrl + "api/create-table");
+  }
+
+  truncateTables() : Observable<number> {
+    return this.http.get<number>(this.baseUrl + "api/truncate-table");
   }
 
   startUpdateWorkload(numThreads : number, numRequests : number) {

@@ -118,7 +118,7 @@ export class AppComponent {
 
   truncateTables() {
     this.status = "Truncating tables...";
-    this.dataSource.createTables().subscribe(data => {
+    this.dataSource.truncateTables().subscribe(data => {
       this.status = "Table truncation complete.";
     },
     error => {
