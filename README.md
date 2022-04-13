@@ -1,9 +1,5 @@
 ## Code setup and Installation
 
-### Local Environment: 
-```
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev -DidCounter=1
-```
 ### Production Environment: 
 ```
 java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-simu-app.jar
@@ -21,15 +17,19 @@ java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-s
 
 ### Running the app from Docker
 ```
-docker pull akscjo/yb-workload-simu-app
+docker pull yugabytedb/yb-workload-simu-app
 ```
 ```
-sudo docker run -p 8080:8080 -e "JAVA_OPTS=-Dnode=<database-host-name> -Duser=<userid> -Dpassword=<password>" docker.io/akscjo/yb-workload-simu-app
+sudo docker run -p 8080:8080 -e "JAVA_OPTS=-Dnode=<database-host-name> -Duser=<userid> -Dpassword=<password>" docker.io/yugabytedb/yb-workload-simu-app
 ```
 ``` 
 Addition JAVA_OPTS parameters: max-pool-size, dbname, port
 ```
 
+### Local Environment: 
+```
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev -DidCounter=1
+```
 
 ### Prod APP UI: 
 ```
