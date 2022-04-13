@@ -8,15 +8,15 @@
 ```
 java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-simu-app.jar
 
-- If you want to run on another port:
-  - -Dserver.port=8081
-
-- Add idCounter Parameter if you want to load data starting at certain number. By default, it will start at 1. If the database already has the ids present exceptions will occur.
-  - -DidCounter=1
-
-- For overriding cluster info, use below props or use add ips in application-xluster.yaml and use  -Dspring-boot.run.profiles=xcluster
-  - -Dspring.datasource.hikari.data-source-properties.serverName=
-  - -Dspring.datasource.hikari.data-source-properties.additionalEndpoints=
+-Dnode=<database-host-name> [default: 127.0.0.1]
+-Duser=<userid> [default: yugabyte]
+-Dpassword=<password> [default: yugabyte]
+-Dport=<port> [default: 5433]
+-Dmax-pool-size=<max-pool-size> [default: 100]
+-Ddbname=<dbname> [default: yugabyte]
+-Dspring.profiles.active=<profile> [default: application.yaml]
+-Dserver.port=8081 [default: 8080]
+-DidCounter=1 [default: 1]
 ```
 
 ### Running the app from Docker
