@@ -6,7 +6,7 @@
 ```
 ### Production Environment: 
 ```
-java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar workload-simulation-demo-app-0.0.1-SNAPSHOT.jar
+java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-simu-app.jar
 
 - If you want to run on another port:
   - -Dserver.port=8081
