@@ -5,18 +5,15 @@ spring:
     enabled: false
   datasource:
     hikari:
-      username: yugabyte
-      password: yugabyte
-      maximumPoolSize: 100
-      maxLifeTime: 3600000
+      username: ${user:yugabyte}
+      password: ${password:yugabyte}
+      maximumPoolSize: ${max-pool-size:100}
+      maxLifeTime: ${max-life-time:3600000}
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
       data-source-properties:
-        serverName: 172.161.61.201
-        portNumber: 5433
-        databaseName: yugabyte
-        additionalEndpoints: 172.161.29.44:5433,172.161.33.169:5433,172.161.61.201:5433
-        topologyKeys: "aws.us-east-2.us-east-2a,aws.us-east-2.us-east-2b,aws.us-east-2.us-east-2c"
-
+        serverName: ${node:127.0.0.1}
+        portNumber: ${port:5433}
+        databaseName: ${dbname:yugabyte}
 
 logging.level:
   java.sql: DEBUG

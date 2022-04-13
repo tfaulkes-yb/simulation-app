@@ -1,9 +1,11 @@
 ## Code setup and Installation
 
 ### Local Environment: 
+```
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev -DidCounter=1
-
+```
 ### Production Environment: 
+```
 java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar workload-simulation-demo-app-0.0.1-SNAPSHOT.jar
 
 - If you want to run on another port:
@@ -15,13 +17,28 @@ java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar workload-simu
 - For overriding cluster info, use below props or use add ips in application-xluster.yaml and use  -Dspring-boot.run.profiles=xcluster
   - -Dspring.datasource.hikari.data-source-properties.serverName=
   - -Dspring.datasource.hikari.data-source-properties.additionalEndpoints=
+```
+
+### Running the app from Docker
+```
+docker pull akscjo/yb-workload-simu-app
+```
+```
+sudo docker run -p 8080:8080 -e "JAVA_OPTS=-Dnode=<database-host-name> -Duser=<userid> -Dpassword=<password>" docker.io/akscjo/yb-workload-simu-app
+```
+``` 
+Addition JAVA_OPTS parameters: max-pool-size, dbname, port
+```
 
 
 ### Prod APP UI: 
+```
 http://<HOSTNAME>:8080
+```
 
-### Submission workload:
-
+### Following options are now available from UI.
+##### Submission workload:
+```
 http://3.13.218.196:8080/api/simulate-submissions/{threads}/{numberOfSubmissions}
 
 - Run 10 “select” queries :
@@ -37,9 +54,9 @@ http://3.13.218.196:8080/api/simulate-submissions/{threads}/{numberOfSubmissions
   - Insert 2 rows to transmission
   - Insert 2 rows to transmission_filing
   - Insert 2 rows to transmit_data_value
-
-###Status Check workload:
-
+```
+##### Status Check workload:
+```
 http://3.13.218.196:8080/api/simulate-status-checks/{threads}/{numberOfStatusChecks}
 
 - Run 20 “selects” from FILING table (4 on each table)
@@ -57,14 +74,15 @@ http://3.13.218.196:8080/api/simulate-status-checks/{threads}/{numberOfStatusChe
   - 2 updates on transmission_filing
   - 2 updates on transmit_data_value
 
+```
 
-
-### Simulate-updates
+##### Simulate-updates
+```
 http://3.13.218.196:8080/api/simulate-updates/{threads}/{numberOfTimesToUpdateSameRecord}
 
  - example: http://localhost:8080/api/simulate-updates/20/100000
  - This will run 20 threads and in each thread pick a random filing Id and perform  updates 100000 times on same filing id.
- 
+ ```
 
 
 
