@@ -1,6 +1,6 @@
 ## Code setup and Installation
-
-### Production Environment: 
+There are multiple ways to run the app:
+### Running the app with prebuilt jar: 
 ```
 java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-simu-app.jar
 
@@ -15,7 +15,7 @@ java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-s
 -DidCounter=1 [default: 1]
 ```
 
-### Running the app from Docker
+### Running the app from Docker image
 ```
 docker pull yugabytedb/yb-workload-simu-app
 ```
