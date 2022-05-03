@@ -6,11 +6,16 @@ import { AppComponent } from './app.component';
 import { ThroughputComponent } from './components/throughput/throughput.component';
 import { HttpClientModule } from '@angular/common/http';
 import { NetworkDiagramComponent } from './components/network-diagram/network-diagram.component';
-import { DialogModule } from 'primeng/dialog';
+import { AccordionModule } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { InputTextModule } from 'primeng/inputtext';
 import { SliderModule} from 'primeng/slider';
 import { FormsModule } from '@angular/forms';
 import { TabViewModule } from 'primeng/tabview';
+import { WorkloadService } from './services/workload-service.service';
 
 @NgModule({
   declarations: [
@@ -19,16 +24,20 @@ import { TabViewModule } from 'primeng/tabview';
     NetworkDiagramComponent,
   ],
   imports: [
+    AccordionModule,
     BrowserModule,
     BrowserAnimationsModule,
     ButtonModule,
     DialogModule,
     HttpClientModule,
+    InputNumberModule,
+    InputSwitchModule,
+    InputTextModule,
     SliderModule,
     FormsModule,
     TabViewModule
   ],
-  providers: [],
+  providers: [WorkloadService],
   bootstrap: [AppComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

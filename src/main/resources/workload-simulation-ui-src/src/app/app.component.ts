@@ -1,7 +1,11 @@
 import { Component, EventEmitter, HostListener } from '@angular/core';
 import { TimingData } from './model/timing-data.model';
 import { TimingPoint } from './model/timing-point.model';
+import { WorkloadDesc } from './model/workload-desc.model';
 import { YugabyteDataSourceService } from './services/yugabyte-data-source.service';
+import { ParamValue } from './model/param-value.model';
+import { WorkloadService } from './services/workload-service.service';
+import { WorkloadParamDesc } from './model/workload-param-desc.model';
 
 @Component({
   selector: 'app-root',
@@ -28,14 +32,104 @@ export class AppComponent {
   LATENCY = "LATENCY";
   THROUGHPUT = "THROUGHPUT";
 
+  workloadValues : any = null;
+  valuesComputed = false;
+
   private minDuration = 60*1000;
   private maxDuration = this.MAX_READINGS * 1000;
   duration = 3 * 60 * 1000;
 
-  constructor(private dataSource : YugabyteDataSourceService ) {
+  constructor(private dataSource : YugabyteDataSourceService,
+            private workloadService : WorkloadService ) {
     setInterval(() => {
       this.getResults();
-    },350);
+    },7400);
+
+    workloadService.getWorkloadObservable().subscribe( data => this.computeWorkloadValues(data));
+  }
+
+  computeWorkloadValues(workloads : WorkloadDesc[]) {
+    // let workloads = this.workloadService.getWorkloads();
+    this.workloadValues = {};
+    for (let i = 0; i < workloads.length; i++) {
+      let thisWorkload = workloads[i];
+      let currentValues : any = {};
+      for (let j = 0; j < thisWorkload.params.length; j++) {
+        let thisParam = thisWorkload.params[j];
+        switch (thisParam.type) {
+          case 'NUMBER':
+            if (thisParam.defaultValue) {
+              currentValues[thisParam.name] = thisParam.defaultValue.intValue || 0;
+            }
+            else {
+              currentValues[thisParam.name] = 0;
+            }
+            break;
+
+          case 'BOOLEAN':
+            if (thisParam.defaultValue) {
+              currentValues[thisParam.name] = thisParam.defaultValue.boolValue || false;
+            }
+            else {
+              currentValues[thisParam.name] = false;
+            }
+            break;
+
+          case 'STRING':
+            if (thisParam.defaultValue) {
+              currentValues[thisParam.name] = thisParam.defaultValue.stringValue || false;
+            }
+            else {
+              currentValues[thisParam.name] = '';
+            }
+            break;
+  
+        }
+      }
+      this.workloadValues[thisWorkload.workloadId] = currentValues;
+    }
+    this.valuesComputed = true;
+  }
+
+  getWorkloads() {
+    return this.workloadService.getWorkloads();
+  }
+
+  private valueToParam(paramDesc: WorkloadParamDesc, paramValue : any) : ParamValue {
+    let paramToSend : ParamValue = {type: paramDesc.type};
+    switch (paramDesc.type) {
+      case 'NUMBER': paramToSend.intValue = paramValue; return paramToSend;
+      case 'BOOLEAN': paramToSend.boolValue = paramValue; return paramToSend;
+      case 'STRING': paramToSend.stringValue = paramValue; return paramToSend;
+    }
+    console.log('Unknown parameter type for ' + paramDesc.name);
+    return paramToSend;
+  }
+
+  launchWorkload(name : String) {
+    console.log("launching " + name);
+    let paramsToSend : ParamValue[] = [];
+    let values = this.workloadValues[name as any];
+    let workloads = this.workloadService.getWorkloads();
+    for (let i = 0; i < workloads.length; i++) {
+      if (workloads[i].workloadId === name) {
+        let thisWorkload = workloads[i];
+        for (let paramIndex = 0; paramIndex < thisWorkload.params.length; paramIndex++) {
+          let thisParam = thisWorkload.params[paramIndex];
+          let paramName = thisParam.name;
+          let thisParamValue = this.valueToParam(thisParam, values[paramName]);
+          paramsToSend.push(thisParamValue);
+        }
+      }
+    }
+    console.log(paramsToSend);
+    console.log(values);
+    
+    this.status = "Submitting workload " + name + "..."
+    this.dataSource.invokeWorkload(name, paramsToSend).subscribe(success => {
+      this.status = "Workload " + name + " successfull submitted."
+      console.log(success);
+    });
   }
 
   getResults() {
@@ -91,15 +185,18 @@ export class AppComponent {
 
   @HostListener('wheel', ['$event'])
   onMouseWheel(event : any) {
-    event.preventDefault();
-    let amount = event.wheelDelta;
-    let change = 1+(amount/1200);
-    this.duration = Math.floor(Math.max(this.minDuration, Math.min(this.maxDuration, this.duration * change)));
+    if (event.srcElement.closest('p-dialog') == null) {
+      event.preventDefault();
+      let amount = event.wheelDelta;
+      let change = 1+(amount/1200);
+      this.duration = Math.floor(Math.max(this.minDuration, Math.min(this.maxDuration, this.duration * change)));
+    }
   }
 
   displayDialog() {
     this.status = "";
     this.showDialog = true;
+    // this.computeWorkloadValues(this.workloadService.getWorkloads());
   }
 
   closeDialog() {

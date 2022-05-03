@@ -1,36 +1,65 @@
 package com.yugabyte.simulation.controller;
 
-import com.yugabyte.simulation.dao.WorkloadSimulationDAO;
-import com.yugabyte.simulation.services.TimerService;
-import com.yugabyte.simulation.services.TimerType;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
+import com.yugabyte.simulation.dao.InvocationResult;
+import com.yugabyte.simulation.dao.ParamValue;
+import com.yugabyte.simulation.dao.WorkloadDesc;
+import com.yugabyte.simulation.dao.WorkloadSimulationDAO;
+import com.yugabyte.simulation.service.SonosWorkload;
+import com.yugabyte.simulation.service.WorkloadSimulation;
+import com.yugabyte.simulation.services.TimerService;
+import com.yugabyte.simulation.services.TimerType;
 
 @RestController
+@RequestMapping("/api")
 public class WorkloadSimulationController {
     @Autowired
     private WorkloadSimulationDAO workloadSimulationDAO;
 
     @Autowired
     private TimerService timerService;
+    
+    // Generic interface, to be populated with class loaded dynamically?
+    private WorkloadSimulation workloadSimulation = new SonosWorkload();
+    
+    @GetMapping("get-workloads")
+    public List<WorkloadDesc> getWorkloads() {
+    	return workloadSimulation.getWorkloads();
+    }
 
-    @GetMapping("/api/create-table")
+    @PostMapping("/invoke-workload/{workload}") 
+    @ResponseBody
+    public InvocationResult invokeWorkload(@PathVariable String workload, @RequestBody ParamValue[] params) {
+    	return workloadSimulation.invokeWorkload(workload, params);
+    }
+    
+    @GetMapping("/create-table")
     public int createTable(){
         return workloadSimulationDAO.createDBTableIfNeeded();
     }
 
-    @GetMapping("/api/truncate-table")
+    @GetMapping("/truncate-table")
     public int truncateTable(){
         return workloadSimulationDAO.truncateDBTable();
     }
 
-    @GetMapping("/api/simulate-submissions/{threads}/{numberOfSubmissions}")
+    @GetMapping("/simulate-submissions/{threads}/{numberOfSubmissions}")
     public void simulateSubmissions(@PathVariable int threads, @PathVariable int numberOfSubmissions){
         // We need to invoke N threads.
         try {
@@ -53,7 +82,7 @@ public class WorkloadSimulationController {
         }
     }
 
-    @GetMapping("/api/simulate-status-checks/{threads}/{numberOfStatusChecks}")
+    @GetMapping("/simulate-status-checks/{threads}/{numberOfStatusChecks}")
     public void simulateStatusChecks(@PathVariable int threads, @PathVariable int numberOfStatusChecks){
         // We need to invoke N threads.
         try {
@@ -78,7 +107,7 @@ public class WorkloadSimulationController {
 
 
 
-    @GetMapping("/api/simulate-updates/{threads}/{numberOfTimesToRerunUpdateOnSameRecord}")
+    @GetMapping("/simulate-updates/{threads}/{numberOfTimesToRerunUpdateOnSameRecord}")
     public int simulateUpdates(@PathVariable int threads, @PathVariable int numberOfTimesToRerunUpdateOnSameRecord){
         // We need to invoke N threads.
         try {

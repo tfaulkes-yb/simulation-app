@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { YBServerModel } from '../model/yb-server-model.model';
 import { TimingData } from '../model/timing-data.model';
+import { WorkloadDesc } from '../model/workload-desc.model';
+import { ParamValue } from '../model/param-value.model';
 
 const PROTOCOL = 'http';
 const PORT = 8080;
@@ -53,6 +55,15 @@ export class YugabyteDataSourceService {
 
   startSubmissionsWorkload(numThreads : number, numRequests : number) {
     return this.http.get<number>(this.baseUrl + 'api/simulate-submissions/' + numThreads + '/' + numRequests);
+  }
+
+  //// Generic interface
+  getWorkloads() : Observable<WorkloadDesc[]> {
+    return this.http.get<WorkloadDesc[]>(this.baseUrl + 'api/get-workloads');
+  }
+
+  invokeWorkload(name : String, params : ParamValue[]) : Observable<String> {
+    return this.http.post<String>(this.baseUrl+"api/invoke-workload/" + name, params);
   }
 
 }

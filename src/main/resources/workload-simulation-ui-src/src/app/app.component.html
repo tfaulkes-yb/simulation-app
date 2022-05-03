@@ -12,10 +12,39 @@
 </div>
 
 
-<p-dialog [(visible)]="showDialog" header="Workload Management" [modal]="true" [style]="{width: '50vw', height: '50%'}" 
+<p-dialog [(visible)]="showDialog" header="Workload Management" [modal]="true" [style]="{width: '50vw', height: '75%'}" 
       [draggable]="true" [resizable]="false" [closable]="false" [focusOnShow]="true">
 
-  <p-tabView>
+  <p-tabView *ngIf="valuesComputed">
+    <p-tabPanel header="Usable Operations" leftIcon="fa-solid fa-table">
+      <p-accordion>
+        <ng-container *ngFor="let workload of getWorkloads(); let i = index">
+          <p-accordionTab header="{{workload.name}}">
+            <div class="workload {{workload.name}} mb-2 large-font">
+              <span style="font-size: large;">{{workload.description}}</span>
+              <div *ngIf="workload.params.length > 0" class="container-fluid">
+                <div *ngFor="let param of workload.params; let j = index">
+                  <div class="row">
+                    <div class="col-3 align-self-center" style="display: inline-block; text-align: right;">
+                      <label [for]="workload.workloadId+'-'+param.name">{{param.name}}:</label>
+                    </div>
+                    <div class="col-9" style="display: inline-block">
+                      <p-inputNumber *ngIf="param.type == 'NUMBER'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]" [min]="param.minValue" [max]="param.maxValue"></p-inputNumber>
+                      <p-inputSwitch *ngIf="param.type == 'BOOLEAN'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-inputSwitch>
+                      <p-inputText *ngIf="param.type == 'STRING'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-inputText>
+                    </div>
+                  </div>  
+                </div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <p-button icon="fa-solid fa-right-to-bracket" (click)="launchWorkload(workload.workloadId)" label="Run {{workload.name}} Workload"></p-button>
+            </div>
+          </p-accordionTab>
+        </ng-container>
+      </p-accordion>
+    </p-tabPanel>
+    <!--
     <p-tabPanel header="Table Operations" leftIcon="fa-solid fa-table">
       <div>
         <p-button icon="fa-solid fa-table-list" (click)="createTables()" label="Create Tables"></p-button>
@@ -80,10 +109,10 @@
         </div>
       </div>
     </p-tabPanel>
-
+-->
   </p-tabView>
 
-  <div class="status" style="color: blue">
+  <div class="status mt-3" style="color: blue">
     {{status}}
   </div>
   <ng-template pTemplate="footer">
