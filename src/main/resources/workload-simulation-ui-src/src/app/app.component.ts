@@ -6,6 +6,7 @@ import { YugabyteDataSourceService } from './services/yugabyte-data-source.servi
 import { ParamValue } from './model/param-value.model';
 import { WorkloadService } from './services/workload-service.service';
 import { WorkloadParamDesc } from './model/workload-param-desc.model';
+import { InvocationResult } from './model/invocation-result.model';
 
 @Component({
   selector: 'app-root',
@@ -43,7 +44,7 @@ export class AppComponent {
             private workloadService : WorkloadService ) {
     setInterval(() => {
       this.getResults();
-    },7400);
+    },340);
 
     workloadService.getWorkloadObservable().subscribe( data => this.computeWorkloadValues(data));
   }
@@ -127,9 +128,18 @@ export class AppComponent {
     
     this.status = "Submitting workload " + name + "..."
     this.dataSource.invokeWorkload(name, paramsToSend).subscribe(success => {
-      this.status = "Workload " + name + " successfull submitted."
       console.log(success);
-    });
+      if (success.result ==0) {
+        this.status = "Workload " + name + " successfully submitted."
+      }
+      else {
+        this.status = "Workload " + name + " failed to submit. Reported error was " + success.data;
+      }
+    },
+    (error => {
+      console.log(error);
+      this.status = "Workload " + name + " failed to submit";
+    }));
   }
 
   getResults() {

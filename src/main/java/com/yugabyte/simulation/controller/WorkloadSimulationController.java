@@ -36,7 +36,8 @@ public class WorkloadSimulationController {
     private TimerService timerService;
     
     // Generic interface, to be populated with class loaded dynamically?
-    private WorkloadSimulation workloadSimulation = new SonosWorkload();
+    @Autowired
+    private WorkloadSimulation workloadSimulation;
     
     @GetMapping("get-workloads")
     public List<WorkloadDesc> getWorkloads() {
