@@ -5,6 +5,7 @@ import { YBServerModel } from '../model/yb-server-model.model';
 import { TimingData } from '../model/timing-data.model';
 import { WorkloadDesc } from '../model/workload-desc.model';
 import { ParamValue } from '../model/param-value.model';
+import { InvocationResult } from '../model/invocation-result.model';
 
 const PROTOCOL = 'http';
 const PORT = 8080;
@@ -14,7 +15,7 @@ const PORT = 8080;
 })
 export class YugabyteDataSourceService {
   baseUrl : string;
-  testEnv = false;
+  testEnv = true;
   constructor(private http: HttpClient) {
     if (this.testEnv) {
       this.baseUrl = `${PROTOCOL}://localhost:${PORT}/`;
@@ -62,8 +63,8 @@ export class YugabyteDataSourceService {
     return this.http.get<WorkloadDesc[]>(this.baseUrl + 'api/get-workloads');
   }
 
-  invokeWorkload(name : String, params : ParamValue[]) : Observable<String> {
-    return this.http.post<String>(this.baseUrl+"api/invoke-workload/" + name, params);
+  invokeWorkload(name : String, params : ParamValue[]) : Observable<InvocationResult> {
+    return this.http.post<InvocationResult>(this.baseUrl+"api/invoke-workload/" + name, params);
   }
 
 }

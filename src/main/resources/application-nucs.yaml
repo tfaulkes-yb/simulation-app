@@ -7,7 +7,7 @@ spring:
     hikari:
       username: yugabyte
       password: 
-      maximumPoolSize: 50
+      maximumPoolSize: 200
       maxLifeTime: 3000000
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
       data-source-properties:

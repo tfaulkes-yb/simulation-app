@@ -1,3 +1,4 @@
 export interface InvocationResult {
-    data : String;
+    data : string;
+    result : number;
 }
