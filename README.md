@@ -13,6 +13,9 @@ java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-s
 -Dspring.profiles.active=<profile> [default: application.yaml]
 -Dserver.port=8081 [default: 8080]
 -DidCounter=1 [default: 1]
+-Dssl=true [default: false]
+-Dsslmode=verify-full [default: disable]
+-Dsslrootcert=<certificatepath> 
 ```
 
 ### Running the app from Docker image
