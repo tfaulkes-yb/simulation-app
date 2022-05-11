@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
 import com.yugabyte.simulation.dao.TimerResult;
+import com.yugabyte.simulation.dao.WorkloadDesc;
 
 @Service
 public class TimerService {
@@ -77,6 +78,7 @@ public class TimerService {
 	
 	private Map<TimerType, ResultsAccumulator> accumulators;
 	private Map<Long, Long> threadStartTimes = new ConcurrentHashMap<Long, Long>();
+	private WorkloadDesc activeWorkload = null;
 	
 	private class ResultsCollator implements Runnable {
 		private long startTime;
@@ -106,10 +108,18 @@ public class TimerService {
 							thisAccumulator.failureCount[index],
 							sampleStartTIme);
 					
-					System.out.printf("%,dms: %s: %s", 
-							now - startTime,
-							thisType,
-							result.toString());
+					WorkloadDesc workload = activeWorkload;
+					String name = thisType.toString();
+					if (workload != null && workload.getWorkloadName(thisType) != null) {
+						name = workload.getWorkloadName(thisType);
+						
+						System.out.printf("%,dms: %s: %s", 
+								now - startTime,
+								name,
+								result.toString());
+
+					}
+					
 					
 					List<TimerResult> results = timingResults.get(thisType);
 					synchronized(results) {
@@ -125,12 +135,12 @@ public class TimerService {
 	
 	public TimerService() {
 		this.timingResults = new ConcurrentHashMap<TimerType, List<TimerResult>>();
-		this.timingResults.put(TimerType.STATUS, new ArrayList<TimerResult>());
-		this.timingResults.put(TimerType.SUBMISSION, new ArrayList<TimerResult>());
+		this.timingResults.put(TimerType.WORKLOAD2, new ArrayList<TimerResult>());
+		this.timingResults.put(TimerType.WORKLOAD1, new ArrayList<TimerResult>());
 
 		this.accumulators = new ConcurrentHashMap<TimerType, TimerService.ResultsAccumulator>();
-		this.accumulators.put(TimerType.STATUS, new ResultsAccumulator());
-		this.accumulators.put(TimerType.SUBMISSION, new ResultsAccumulator());
+		this.accumulators.put(TimerType.WORKLOAD2, new ResultsAccumulator());
+		this.accumulators.put(TimerType.WORKLOAD1, new ResultsAccumulator());
 
 		Thread collator = new Thread(new ResultsCollator());
 		collator.setDaemon(true);
@@ -138,12 +148,23 @@ public class TimerService {
 		collator.start();
 	}
 
+	public synchronized TimerService setCurrentWorkload(WorkloadDesc workload) {
+		this.activeWorkload = workload;
+		return this;
+	}
+	
+	public synchronized TimerService removeCurrentWorkload(WorkloadDesc workload) {
+		if (this.activeWorkload == workload) {
+			this.activeWorkload = null;
+		}
+		return this;
+	}
 	public Timer getTimer(TimerType type) {
 		return new TimerImpl(type);
 	}
 	
 	public Map<TimerType, List<TimerResult>> getResults(long fromTime) {
-		TimerType thisType = TimerType.STATUS;
+		TimerType thisType = TimerType.WORKLOAD2;
 		List<TimerResult> results = timingResults.get(thisType);
 		synchronized (results) {
 			if (fromTime <= 0) {

@@ -148,7 +148,7 @@ public class WorkloadSimulationController {
         @Override
         public Result call() throws Exception {
             try {
-                workloadSimulationDAO.simulateSubmission(timerService.getTimer(TimerType.SUBMISSION));
+                workloadSimulationDAO.simulateSubmission(timerService.getTimer(TimerType.WORKLOAD1));
                 //timer.end(ExecutionStatus.SUCCESS);
             }
             catch (Exception e) {
@@ -166,7 +166,7 @@ public class WorkloadSimulationController {
         @Override
         public Result call() throws Exception {
             try {
-                workloadSimulationDAO.simulateStatus(timerService.getTimer(TimerType.STATUS));
+                workloadSimulationDAO.simulateStatus(timerService.getTimer(TimerType.WORKLOAD2));
             }
             catch (Exception e) {
                 System.out.println("@@@@@ACTEST exception:"+e.getMessage());
@@ -186,7 +186,7 @@ public class WorkloadSimulationController {
         @Override
         public Result call() throws Exception {
             try {
-                workloadSimulationDAO.simulateUpdates(timerService.getTimer(TimerType.SUBMISSION),numberOfTimesToRerunUpdateOnSameRecord);
+                workloadSimulationDAO.simulateUpdates(timerService.getTimer(TimerType.WORKLOAD1),numberOfTimesToRerunUpdateOnSameRecord);
             }
             catch (Exception e) {
                 System.out.println("@@@@@ACTEST exception:"+e.getMessage());

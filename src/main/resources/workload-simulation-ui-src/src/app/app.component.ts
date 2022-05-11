@@ -18,20 +18,25 @@ export class AppComponent {
   status = "This is a test messsage";
   updateThreads : number = 20;
   updateRequests : number = 10000;
-  statusCheckThreads : number = 10;
-  statusCheckRequests : number = 40000;
-  submissionThreads: number = 5;
-  submissionRequests : number = 50000;
+  workload2Threads : number = 10;
+  workload2Requests : number = 40000;
+  workload1Threads: number = 5;
+  workload1Requests : number = 50000;
 
   showDialog = false;
   title = 'workload-simulation-ui-src';
-  currentData : TimingData = {STATUS : [], SUBMISSION : []};
+  currentData : TimingData = {WORKLOAD2 : [], WORKLOAD1 : []};
   startTime = 0;
   MAX_READINGS = 3600;
-  SUBMISSION = "SUBMISSION";
-  STATUS = "STATUS";
+  WORKLOAD1 = "WORKLOAD1";
+  WORKLOAD2 = "WORKLOAD2";
   LATENCY = "LATENCY";
   THROUGHPUT = "THROUGHPUT";
+
+  workload1Latency = "Workload 1";
+  workload2Latency = "Workload 2";
+  workload1Throughput = "Workload 1";
+  workload2Throughput = "Workload 2";
 
   workloadValues : any = null;
   valuesComputed = false;
@@ -115,6 +120,13 @@ export class AppComponent {
     for (let i = 0; i < workloads.length; i++) {
       if (workloads[i].workloadId === name) {
         let thisWorkload = workloads[i];
+
+        // Set the names of the workloads
+        this.workload1Latency = thisWorkload.workloadNames.WORKLOAD1 || 'Workload 1';
+        this.workload2Latency = thisWorkload.workloadNames.WORKLOAD2 || 'Workload 2';
+        this.workload1Throughput = thisWorkload.workloadNames.WORKLOAD1 || 'Workload 1';
+        this.workload2Throughput = thisWorkload.workloadNames.WORKLOAD2 || 'Workload 2';
+
         for (let paramIndex = 0; paramIndex < thisWorkload.params.length; paramIndex++) {
           let thisParam = thisWorkload.params[paramIndex];
           let paramName = thisParam.name;
@@ -123,8 +135,6 @@ export class AppComponent {
         }
       }
     }
-    console.log(paramsToSend);
-    console.log(values);
     
     this.status = "Submitting workload " + name + "..."
     this.dataSource.invokeWorkload(name, paramsToSend).subscribe(success => {
@@ -144,12 +154,12 @@ export class AppComponent {
 
   getResults() {
     this.dataSource.getTimingResults(this.startTime).subscribe(data => {
-      if (!data.STATUS) {
+      if (!data.WORKLOAD2) {
         return;
       }
 
-      let newData : TimingData = {STATUS:[], SUBMISSION:[]};
-      newData.STATUS = data.STATUS.map((value) =>
+      let newData : TimingData = {WORKLOAD2:[], WORKLOAD1:[]};
+      newData.WORKLOAD2 = data.WORKLOAD2.map((value) =>
         {
           return {
             avgUs : value.avgUs / 1000.0,
@@ -160,7 +170,7 @@ export class AppComponent {
             startTimeMs: value.startTimeMs
           } as TimingPoint
         });
-      newData.SUBMISSION = data.SUBMISSION.map((value) =>
+      newData.WORKLOAD1 = data.WORKLOAD1.map((value) =>
         {
           return {
             avgUs : value.avgUs / 1000.0,
@@ -176,20 +186,20 @@ export class AppComponent {
       }
       else {
         // Append these results to the existing data and trim the front if needed
-        this.currentData.STATUS = this.currentData.STATUS.concat(newData.STATUS);
-        if (this.currentData.STATUS.length > this.MAX_READINGS) {
-          this.currentData.STATUS.splice(0, this.currentData.STATUS.length-this.MAX_READINGS);
+        this.currentData.WORKLOAD2 = this.currentData.WORKLOAD2.concat(newData.WORKLOAD2);
+        if (this.currentData.WORKLOAD2.length > this.MAX_READINGS) {
+          this.currentData.WORKLOAD2.splice(0, this.currentData.WORKLOAD2.length-this.MAX_READINGS);
         }
-        this.currentData.SUBMISSION = this.currentData.SUBMISSION.concat(newData.SUBMISSION);
-        if (this.currentData.SUBMISSION.length > this.MAX_READINGS) {
-          this.currentData.SUBMISSION.splice(0, this.currentData.SUBMISSION.length-this.MAX_READINGS);
+        this.currentData.WORKLOAD1 = this.currentData.WORKLOAD1.concat(newData.WORKLOAD1);
+        if (this.currentData.WORKLOAD1.length > this.MAX_READINGS) {
+          this.currentData.WORKLOAD1.splice(0, this.currentData.WORKLOAD1.length-this.MAX_READINGS);
         }
       }
-      if (this.currentData.STATUS.length > 0) {
-        this.startTime = this.currentData.STATUS[this.currentData.STATUS.length-1].startTimeMs;
+      if (this.currentData.WORKLOAD2.length > 0) {
+        this.startTime = this.currentData.WORKLOAD2[this.currentData.WORKLOAD2.length-1].startTimeMs;
       }
       let temp = this.currentData;
-      this.currentData = {STATUS: temp.STATUS, SUBMISSION: temp.SUBMISSION };
+      this.currentData = {WORKLOAD2: temp.WORKLOAD2, WORKLOAD1: temp.WORKLOAD1 };
     });
   }
 

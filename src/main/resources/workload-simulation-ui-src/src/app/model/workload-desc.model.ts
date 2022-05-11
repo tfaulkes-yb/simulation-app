@@ -5,4 +5,5 @@ export interface WorkloadDesc {
     name : string;
     description : string;
     params : WorkloadParamDesc[];
+    workloadNames : any;
 }

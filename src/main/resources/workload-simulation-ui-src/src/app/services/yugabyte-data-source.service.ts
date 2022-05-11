@@ -51,11 +51,11 @@ export class YugabyteDataSourceService {
   }
 
   startStatusChecksWorkload(numThreads : number, numRequests : number) {
-    return this.http.get<number>(this.baseUrl + 'api/simulate-status-checks/' + numThreads + '/' + numRequests);
+    return this.http.get<number>(this.baseUrl + 'api/simulate-workload2/' + numThreads + '/' + numRequests);
   }
 
   startSubmissionsWorkload(numThreads : number, numRequests : number) {
-    return this.http.get<number>(this.baseUrl + 'api/simulate-submissions/' + numThreads + '/' + numRequests);
+    return this.http.get<number>(this.baseUrl + 'api/simulate-workload1/' + numThreads + '/' + numRequests);
   }
 
   //// Generic interface

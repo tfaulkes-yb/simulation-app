@@ -1,6 +1,6 @@
 import { TimingPoint } from "./timing-point.model";
 
 export interface TimingData {
-    STATUS: TimingPoint[];
-    SUBMISSION: TimingPoint[];
+    WORKLOAD2: TimingPoint[];
+    WORKLOAD1: TimingPoint[];
 }

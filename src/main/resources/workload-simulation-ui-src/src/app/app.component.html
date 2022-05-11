@@ -2,10 +2,10 @@
   <div style="height: 60%; width: 50%; margin: 0; padding: 0; display: inline-block; float: left;">
     <app-network-diagram></app-network-diagram>
   </div>
-  <app-throughput [idName]="'submissionLatency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="SUBMISSION"></app-throughput> 
-  <app-throughput [idName]="'statusLatency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="STATUS"></app-throughput> 
-  <app-throughput [idName]="'submissionThroughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="SUBMISSION"></app-throughput> 
-  <app-throughput [idName]="'statusThroughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="STATUS"></app-throughput> 
+  <app-throughput [idName]="'workload1Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Latency"></app-throughput> 
+  <app-throughput [idName]="'workload2Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Latency"></app-throughput> 
+  <app-throughput [idName]="'workload1Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Throughput"></app-throughput> 
+  <app-throughput [idName]="'workload2Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Throughput"></app-throughput> 
 </div>
 <div style="position: absolute; top: 20px; left: 20px; width: 20px; height: 20px; cursor: pointer;" (click)="displayDialog()">
   <span class="fa-solid fa-bars"></span>
@@ -31,7 +31,7 @@
                     <div class="col-9" style="display: inline-block">
                       <p-inputNumber *ngIf="param.type == 'NUMBER'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]" [min]="param.minValue" [max]="param.maxValue"></p-inputNumber>
                       <p-inputSwitch *ngIf="param.type == 'BOOLEAN'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-inputSwitch>
-                      <p-inputText *ngIf="param.type == 'STRING'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-inputText>
+                      <input *ngIf="param.type == 'STRING'" type="text" pInputText [id]="workload.workloadId+'-'+param.name" style="width: 100%;" [name]="workload.workloadId+'-'+param.name" ngDefaultControl [(ngModel)]="workloadValues[workload.workloadId][param.name]"/>
                     </div>
                   </div>  
                 </div>
@@ -59,17 +59,17 @@
     <p-tabPanel header="Submissions Workload" leftIcon="fa-solid fa-right-to-bracket">
       <div>
         <div>
-          Threads: {{submissionThreads}}
+          Threads: {{workload1Threads}}
           <p></p>
-          <p-slider [(ngModel)]="submissionThreads" [min]="1" [max]="128" ></p-slider>
+          <p-slider [(ngModel)]="workload1Threads" [min]="1" [max]="128" ></p-slider>
         </div>
         <div class="mt-2 pt-4">
-          Number of Requests: {{submissionRequests}}
+          Number of Requests: {{workload1Requests}}
           <p></p>
-          <p-slider [(ngModel)]="submissionRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
+          <p-slider [(ngModel)]="workload1Requests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
         </div>
         <div class="pt-4">
-          <p-button icon="fa-solid fa-right-to-bracket" (click)="startSubmissionsWorkload(submissionThreads, submissionRequests)" label="Launch Submission Workload"></p-button>
+          <p-button icon="fa-solid fa-right-to-bracket" (click)="startSubmissionsWorkload(workload1Threads, workload1Requests)" label="Launch Submission Workload"></p-button>
         </div>
       </div>
     </p-tabPanel>
@@ -95,14 +95,14 @@
     <p-tabPanel header="Status Check Workload" leftIcon="fa-solid fa-circle-question">
       <div>
         <div>
-          Threads: {{statusCheckThreads}}
+          Threads: {{workload2CheckThreads}}
           <p></p>
-          <p-slider [(ngModel)]="statusCheckThreads" [min]="1" [max]="128" ></p-slider>
+          <p-slider [(ngModel)]="workload2CheckThreads" [min]="1" [max]="128" ></p-slider>
         </div>
         <div class="mt-2 pt-4">
-          Number of Requests: {{statusCheckRequests}}
+          Number of Requests: {{workload2CheckRequests}}
           <p></p>
-          <p-slider [(ngModel)]="statusCheckRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
+          <p-slider [(ngModel)]="workload2CheckRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
         </div>
         <div class="pt-4">
           <p-button icon="fa-solid fa-person-running" (click)="startStatusCheckWorkload(statusCheckThreads, statusCheckRequests)" label="Launch Status Check Workload"></p-button>

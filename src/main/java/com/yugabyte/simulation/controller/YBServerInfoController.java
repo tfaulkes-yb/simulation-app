@@ -257,7 +257,7 @@ public class YBServerInfoController {
     private Runnable submissionRunnable = new Runnable() {
 		public void run() {
 			while (true) {
-		    	Timer timer = timerService.getTimer(TimerType.SUBMISSION);
+		    	Timer timer = timerService.getTimer(TimerType.WORKLOAD1);
 		    	timer.start();
 		    	// Do work
 		    	
@@ -271,7 +271,7 @@ public class YBServerInfoController {
     private Runnable statusRunnable = new Runnable() {
 		public void run() {
 			while (true) {
-		    	Timer timer = timerService.getTimer(TimerType.STATUS);
+		    	Timer timer = timerService.getTimer(TimerType.WORKLOAD2);
 		    	timer.start();
 		    	// Do work
 		    	

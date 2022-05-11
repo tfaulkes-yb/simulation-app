@@ -1,9 +1,8 @@
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnInit, ViewChild, EventEmitter } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnInit, ViewChild, SimpleChanges } from '@angular/core';
 import * as d3 from 'd3';
 import { YugabyteDataSourceService } from 'src/app/services/yugabyte-data-source.service';
-import { TimingPoint } from '../../model/timing-point.model';
 import { TimingData } from '../../model/timing-data.model';
-import { Line } from 'd3';
+import { TimingPoint } from '../../model/timing-point.model';
 
 enum LineType { MIN = 0, AVG = 1, MAX = 2 };
 @Component({
@@ -50,13 +49,16 @@ export class ThroughputComponent implements OnInit, AfterViewInit, OnChanges {
   idName = 'chart';
 
   @Input()
-  timingData : TimingData = {SUBMISSION:[], STATUS: []};
+  timingData : TimingData = {WORKLOAD1:[], WORKLOAD2: []};
 
   @Input()
-  timingMetric = "SUBMISSION";
+  timingMetric = "WORKLOAD1";
 
   @Input()
   timingType = "LATENCY";
+
+  @Input()
+  timingMetricName = "Workload 1";
 
 
   constructor(
@@ -84,7 +86,15 @@ export class ThroughputComponent implements OnInit, AfterViewInit, OnChanges {
     this.defineLegend();
   }
 
-  ngOnChanges() {
+  ngOnChanges(changes : SimpleChanges) {
+    if (changes.timingMetricName) {
+      this.timingMetricName = changes.timingMetricName.currentValue;
+      if (this.svg) {
+        let heading = this.getHeadingString();
+        this.svg.select('.chartTitle').text(heading);
+        }
+    }
+
     this.update();
   }
 
@@ -97,9 +107,13 @@ export class ThroughputComponent implements OnInit, AfterViewInit, OnChanges {
       .attr("preserveAspectRatio", 'xMinYMin');
   }
 
+  private getHeadingString() : string {
+    return (this.timingType == "LATENCY" ? "Latency " : "Throughput ") + "(" + this.timingMetricName + ")";
+  }
+
   private defineHeading() {
-    var xLabel = this.svg.append('g').attr('class', 'xLabel');
-    let heading = (this.timingType == "LATENCY" ? "Latency " : "Throughput ") + (this.timingMetric == "SUBMISSION" ? "(Submissions)" : "(Status Checks)");
+    var xLabel = this.svg.append('g').attr('class', 'xLabel heading');
+    let heading = this.getHeadingString();
     xLabel.append('text')
       .attr('class', 'chartTitle')
       .attr('text-anchor', 'middle')
