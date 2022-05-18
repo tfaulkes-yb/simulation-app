@@ -37,9 +37,10 @@ public class TimerService {
 		}
 		
 		@Override
-		public void end(ExecutionStatus status) {
+		public long end(ExecutionStatus status) {
 			long time = System.nanoTime() - startTime;
 			TimerService.this.submitResult(time/1000, type, status);
+			return time;
 		}
 	}
 

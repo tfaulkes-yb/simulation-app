@@ -7,7 +7,7 @@ spring:
     hikari:
       username: yugabyte
       password: 
-      maximumPoolSize: 200
+      maximumPoolSize: 100
       maxLifeTime: 3000000
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
       data-source-properties:
@@ -16,6 +16,9 @@ spring:
         databaseName: yugabyte
         additionalEndpoints: 192.168.86.235:5433,192.168.86.237:5433
         topologyKeys: "cloud1.datacenter1.rack1"
+        ssl: ${ssl:false}
+        sslmode: ${sslmode:disable}
+        sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
 
 
 logging.level:

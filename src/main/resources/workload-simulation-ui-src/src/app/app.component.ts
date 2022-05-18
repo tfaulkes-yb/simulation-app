@@ -7,6 +7,7 @@ import { ParamValue } from './model/param-value.model';
 import { WorkloadService } from './services/workload-service.service';
 import { WorkloadParamDesc } from './model/workload-param-desc.model';
 import { InvocationResult } from './model/invocation-result.model';
+import { WorkloadStatus } from './model/workload-status.model';
 
 @Component({
   selector: 'app-root',
@@ -40,6 +41,10 @@ export class AppComponent {
 
   workloadValues : any = null;
   valuesComputed = false;
+  selected : boolean[] = [];
+
+  activeLoading : boolean = false;
+  workloadStatuses : WorkloadStatus[] = [];
 
   private minDuration = 60*1000;
   private maxDuration = this.MAX_READINGS * 1000;
@@ -52,6 +57,10 @@ export class AppComponent {
     },340);
 
     workloadService.getWorkloadObservable().subscribe( data => this.computeWorkloadValues(data));
+    // this.workloadStatuses.push({name:'testWorkload', startTime:0, endTime:0, status:'Running'});
+    // this.workloadStatuses.push({name:'randomWorklad', startTime:0, endTime:0, status:'Running'});
+    // this.workloadStatuses.push({name:'seedWorkload', startTime:0, endTime:0, status:'Running'});
+    // this.workloadStatuses.push({name:'playWorkload', startTime:0, endTime:0, status:'Running'});
   }
 
   computeWorkloadValues(workloads : WorkloadDesc[]) {
@@ -97,9 +106,31 @@ export class AppComponent {
     this.valuesComputed = true;
   }
 
+  handleChange(e : any) {
+    console.log(e.index);
+    if (e.index == 1) {
+      this.activeLoading = true;
+      this.dataSource.getActiveWorkloads().subscribe(workloads => {
+        this.activeLoading = false;
+        this.workloadStatuses = workloads;
+      });
+    }
+  }
+
   getWorkloads() {
     return this.workloadService.getWorkloads();
   }
+
+  terminateTask(workloadId : string) {
+    this.dataSource.terminateWorkload(workloadId).subscribe( result => {
+      this.activeLoading = true;
+      this.dataSource.getActiveWorkloads().subscribe(workloads => {
+        this.activeLoading = false;
+        this.workloadStatuses = workloads;
+      });
+    });
+  }
+
 
   private valueToParam(paramDesc: WorkloadParamDesc, paramValue : any) : ParamValue {
     let paramToSend : ParamValue = {type: paramDesc.type};
@@ -215,6 +246,10 @@ export class AppComponent {
 
   displayDialog() {
     this.status = "";
+    let count = this.getWorkloads().length;
+    for (let i =0; i < count; i++) {
+      this.selected[i] = false;
+    }
     this.showDialog = true;
     // this.computeWorkloadValues(this.workloadService.getWorkloads());
   }

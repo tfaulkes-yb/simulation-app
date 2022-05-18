@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Setting testEnv flag to be false"
+echo "Setting testEnv flag to be false on ./src/app/services/yugabyte-data-source.service.ts"
 sed 's/testEnv = true;/testEnv = false;/' ./src/app/services/yugabyte-data-source.service.ts > /tmp/yugabyte-data-source.service.ts
 if [ "$?" -ne "0" ]
 then

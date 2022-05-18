@@ -21,10 +21,12 @@ import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadSimulationDAO;
-import com.yugabyte.simulation.service.SonosWorkload;
+import com.yugabyte.simulation.dao.WorkloadStatus;
 import com.yugabyte.simulation.service.WorkloadSimulation;
 import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.services.TimerType;
+import com.yugabyte.simulation.workload.WorkloadManager;
+import com.yugabyte.simulation.workload.WorkloadTypeInstance;
 
 @RestController
 @RequestMapping("/api")
@@ -34,6 +36,9 @@ public class WorkloadSimulationController {
 
     @Autowired
     private TimerService timerService;
+    
+    @Autowired
+    private WorkloadManager workloadManager;
     
     // Generic interface, to be populated with class loaded dynamically?
     @Autowired
@@ -48,6 +53,26 @@ public class WorkloadSimulationController {
     @ResponseBody
     public InvocationResult invokeWorkload(@PathVariable String workload, @RequestBody ParamValue[] params) {
     	return workloadSimulation.invokeWorkload(workload, params);
+    }
+    
+    @GetMapping("get-active-workloads")
+    public List<WorkloadStatus> getActiveWorkloads() {
+    	List<WorkloadTypeInstance> activeWorkloads = workloadManager.getActiveWorkloads();
+    	List<WorkloadStatus> statuses = new ArrayList<WorkloadStatus>();
+    	for (WorkloadTypeInstance instance : activeWorkloads) {
+    		statuses.add(new WorkloadStatus(instance.getWorkloadId(), instance.getStartTime(), instance.getEndTime(), 
+    				instance.isComplete() ? "COMPLETE" : instance.isTerminated() ? "TERMINATED" : "ACTIVE"));
+    	}
+    	return statuses;
+    }
+    
+    @GetMapping("terminate-workload/{workloadId}")
+    public InvocationResult terminateWorkload(@PathVariable String workloadId) {
+    	WorkloadTypeInstance workload = workloadManager.getWorkloadByName(workloadId);
+    	if (workload != null) {
+    		workload.terminate();
+    	}
+    	return new InvocationResult("Ok");
     }
     
     @GetMapping("/create-table")

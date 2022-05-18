@@ -14,7 +14,9 @@ import { InputSwitchModule } from 'primeng/inputswitch';
 import { InputTextModule } from 'primeng/inputtext';
 import { SliderModule} from 'primeng/slider';
 import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
 import { TabViewModule } from 'primeng/tabview';
+
 import { WorkloadService } from './services/workload-service.service';
 
 @NgModule({
@@ -35,7 +37,8 @@ import { WorkloadService } from './services/workload-service.service';
     InputTextModule,
     SliderModule,
     FormsModule,
-    TabViewModule
+    TabViewModule,
+    TableModule
   ],
   providers: [WorkloadService],
   bootstrap: [AppComponent],

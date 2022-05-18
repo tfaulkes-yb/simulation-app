@@ -5,8 +5,8 @@ spring:
     enabled: false
   datasource:
     hikari:
-      username: ${user:yugabyte}
-#      username: yugabyte
+#      username: ${user:yugabyte}
+      username: yugabyte
       password: ${password:yugabyte}
       maximumPoolSize: ${max-pool-size:100}
       maxLifeTime: ${max-life-time:3600000}
