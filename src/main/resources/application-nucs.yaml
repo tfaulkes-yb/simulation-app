@@ -16,9 +16,9 @@ spring:
         databaseName: yugabyte
         additionalEndpoints: 192.168.86.235:5433,192.168.86.237:5433
         topologyKeys: "cloud1.datacenter1.rack1"
-        ssl: ${ssl:false}
-        sslmode: ${sslmode:disable}
-        sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
+#        ssl: ${ssl:false}
+#        sslmode: ${sslmode:disable}
+#        sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
 
 
 logging.level:

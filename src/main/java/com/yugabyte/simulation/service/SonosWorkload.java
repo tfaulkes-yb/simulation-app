@@ -119,7 +119,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ ");";
 	
 	private static final String TOP_DOWN_QUERY = 
-			"/*+ Set(enable_seqscan off) IndexScan(t topology_idx2) */ WITH RECURSIVE locs AS ("
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_idx2) */ WITH RECURSIVE locs AS ("
 			+ "	SELECT"
 			+ "		id,idtype,idname,parentid,children,depth"
 			+ "	FROM"
@@ -138,33 +138,33 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "			 topology t"
 			+ "		INNER JOIN locs l ON l.id = t.parentid"
 			+ ") SELECT"
-			+ "	* "
+			+ "	id,idtype,idname,parentid,children,depth "
 			+ " FROM "
-			+ "	locs order by idtype desc,id;";
+			+ "	locs;";
 	
 	private static final String BOTTOM_UP_QUERY = 
-			"WITH RECURSIVE locs AS ("
-			+ "        SELECT"
-			+ "                id,idtype,idname,parentid,children,depth"
-			+ "        FROM"
-			+ "                topology"
-			+ "        WHERE"
-			+ "                id = ?"
-			+ "        UNION ALL"
-			+ "                SELECT"
-			+ "                     t.id,"
-			+ "                     t.idtype,"
-			+ "                     t.idname,"
-			+ "						t.parentid,"
-			+ "						t.children,"
-			+ "						t.depth"
-			+ "                FROM"
-			+ "                         topology t,locs l"
-			+ "                 where l.parentid=t.id"
-			+ ") SELECT"
-			+ "        *"
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_idx2) */ WITH RECURSIVE locs AS ("
+			+ " SELECT"
+			+ "     id,idtype,idname,parentid,children,depth"
 			+ " FROM"
-			+ "        locs order by id;";
+			+ "     topology"
+			+ " WHERE"
+			+ "     id = ?"
+			+ " UNION ALL"
+			+ "     SELECT"
+			+ "         t.id,"
+			+ "         t.idtype,"
+			+ "         t.idname,"
+			+ "		    t.parentid,"
+			+ "			t.children,"
+			+ "			t.depth"
+			+ "     FROM"
+			+ "         topology t,locs l"
+			+ "     where l.parentid=t.id"
+			+ ") SELECT"
+			+ "        id,idtype,idname,parentid,children,depth"
+			+ " FROM"
+			+ "        locs;";
 	
 	private static final String READ_TOPOLOGY = 
 			"   SELECT"
@@ -281,10 +281,10 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			"Simulation",
 			"Run a simulation of the day-to-day activities of Sonos. This includes adding locations and looking at component hierarchies",
 			new WorkloadParamDesc("Throughput (tps)", true, 1, 1000000, 500),
-			new WorkloadParamDesc("Percentage backfills", true, 0, 100, 10),
-			new WorkloadParamDesc("Percentage top down reads", true, 0, 100, 10),
-			new WorkloadParamDesc("Percentage bottom up reads", true, 0, 100, 10),
-			new WorkloadParamDesc("Percentage point reads", true, 0, 100, 10),
+			new WorkloadParamDesc("Backfill ratio", true, 0, 100, 10),
+			new WorkloadParamDesc("Top down read ratio", true, 0, 100, 10),
+			new WorkloadParamDesc("Bottom up read ratio", true, 0, 100, 10),
+			new WorkloadParamDesc("Point read ratio", true, 0, 100, 10),
 			new WorkloadParamDesc("Use local reads", true, false)
 			)
 			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
@@ -399,6 +399,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	private void runPointRead(String uuid, boolean followerReads) {
 		String query = followerReads ? READ_TOPOLOGY_FOLLOWER_READ : READ_TOPOLOGY;
 		
+		long now = System.currentTimeMillis();
 		jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR},
 				new RowCallbackHandler() {
 					
@@ -416,6 +417,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 						}
 					}
 				});
+		
+		System.out.printf("TOP DOWN query (%s) ran in %dms\n", uuid, System.currentTimeMillis() - now);
 	}
 	
 	private void createTables(boolean force) {

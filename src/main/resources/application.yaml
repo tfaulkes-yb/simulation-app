@@ -15,9 +15,9 @@ spring:
         serverName: ${node:127.0.0.1}
         portNumber: ${port:5433}
         databaseName: ${dbname:yugabyte}
-        ssl: ${ssl:false}
-        sslmode: ${sslmode:disable}
-        sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
+        #ssl: ${ssl:false}
+        #sslmode: ${sslmode:disable}
+        #sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
 
 logging.level:
   java.sql: DEBUG
@@ -25,3 +25,4 @@ logging.level:
   com.yugabyte: ERROR
   org.hibernate.SQL: DEBUG
   org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  com.yugabyte.simulation.workload: DEBUG

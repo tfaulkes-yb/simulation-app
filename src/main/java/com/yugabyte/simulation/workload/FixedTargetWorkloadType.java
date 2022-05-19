@@ -19,7 +19,14 @@ import com.yugabyte.simulation.services.TimerType;
 
 import ch.qos.logback.core.recovery.ResilientSyslogOutputStream;
 
-public class ThroughputWorkloadType extends WorkloadType {
+/**
+ * Run a workload with a fixed target. For example, to seed a database with 
+ * 1,000,000 records. This will launch a specified number of threads to process
+ * the workload. Note that it is up to the 
+ * @author timfaulkes
+ *
+ */
+public class FixedTargetWorkloadType extends WorkloadType {
 	
 	public interface ExecuteTask {
 		public Object run(Object customData, Object threadData);
@@ -43,7 +50,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private final TimerService timerService;
 		private final AtomicLong idleTimeCounter;
 		private final AtomicInteger transactionCounter;
-	    private static final Logger LOGGER = LoggerFactory.getLogger(ThroughputWorkloadType.class);
+	    private static final Logger LOGGER = LoggerFactory.getLogger(FixedTargetWorkloadType.class);
 		
 		public ThreadManager(int desiredRate, int maxThreads, ExecutorService executor, ExecuteTask runner, Object customData, TimerService timerservice) {
 			super();
@@ -255,7 +262,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 		
 		@Override
 		public WorkloadType getType() {
-			return ThroughputWorkloadType.this;
+			return FixedTargetWorkloadType.this;
 		}
 		@Override
 		public boolean isComplete() {

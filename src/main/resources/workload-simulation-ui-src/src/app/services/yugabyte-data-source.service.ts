@@ -16,7 +16,7 @@ const PORT = 8080;
 })
 export class YugabyteDataSourceService {
   baseUrl : string;
-  testEnv = false;
+  testEnv = true;
   constructor(private http: HttpClient) {
     if (this.testEnv) {
       this.baseUrl = `${PROTOCOL}://localhost:${PORT}/`;

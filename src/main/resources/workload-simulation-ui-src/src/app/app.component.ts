@@ -46,6 +46,9 @@ export class AppComponent {
   activeLoading : boolean = false;
   workloadStatuses : WorkloadStatus[] = [];
 
+  commsErrorDialog : boolean = false;
+  commsErrorCount : number = 0;
+
   private minDuration = 60*1000;
   private maxDuration = this.MAX_READINGS * 1000;
   duration = 3 * 60 * 1000;
@@ -231,6 +234,15 @@ export class AppComponent {
       }
       let temp = this.currentData;
       this.currentData = {WORKLOAD2: temp.WORKLOAD2, WORKLOAD1: temp.WORKLOAD1 };
+      this.commsErrorCount = 0;
+      this.commsErrorDialog = false;
+    },
+    (error) => {
+      if (!this.commsErrorDialog) {
+        if (++this.commsErrorCount > 5) {
+          this.commsErrorDialog = true;
+        }
+      }
     });
   }
 
