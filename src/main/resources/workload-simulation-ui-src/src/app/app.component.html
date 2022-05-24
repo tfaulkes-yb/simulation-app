@@ -62,13 +62,23 @@
                 <p-columnFilter type="text" field="workloadId" display="menu" class="ml-auto"></p-columnFilter>
               </div>
             </th>
+            <th pSortableColumn="startTime">
+              <div class="flex justify-content-between align-items-center">
+                Start Time
+                <p-sortIcon field="startTime"></p-sortIcon>
+                <p-columnFilter type="text" field="startTime" display="menu" class="ml-auto"></p-columnFilter>
+              </div>
+            </th>
             <th style="width: 8rem"></th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-workloadStatus>
           <tr>
             <td>
-              <span class="p-column-title">Name</span>{{workloadStatus.workloadId}}
+              <span class="p-column-title">WorkloadId</span>{{workloadStatus.workloadId}}
+            </td>
+            <td>
+              <span class="p-column-title">Start Time</span>{{workloadStatus.startTime | date:'mediumTime' }}
             </td>
             <td style="text-align: center">
               <button pButton type="button" (click)="terminateTask(workloadStatus.workloadId)" class="p-button-secondary" icon="fa-solid fa-trash-can"></button>

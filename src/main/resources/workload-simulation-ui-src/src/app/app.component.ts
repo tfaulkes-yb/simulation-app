@@ -254,7 +254,7 @@ export class AppComponent {
       let change = 1+(amount/1200);
       this.duration = Math.floor(Math.max(this.minDuration, Math.min(this.maxDuration, this.duration * change)));
     }
-  }
+  } 
 
   displayDialog() {
     this.status = "";
