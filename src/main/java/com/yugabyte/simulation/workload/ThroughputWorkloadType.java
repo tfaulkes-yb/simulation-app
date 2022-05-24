@@ -88,8 +88,10 @@ public class ThroughputWorkloadType extends WorkloadType {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug(String.format("Creating and Submitting a new thread, %d -> %d, rate = %f\n", this.getCurrentThreadCount(), this.getCurrentThreadCount()+1, this.getCurrentRate()));
 			}
-			this.executor.submit(new WorkerThread(threadDelay, idleTimeCounter, transactionCounter, terminate, runner, customData, timerService));
-			this.currentThreads++;			
+			if (!this.terminate.get()) {
+				this.executor.submit(new WorkerThread(threadDelay, idleTimeCounter, transactionCounter, terminate, runner, customData, timerService));
+				this.currentThreads++;
+			}
 		}
 		
 		private void setThreadDelay(int delay) {

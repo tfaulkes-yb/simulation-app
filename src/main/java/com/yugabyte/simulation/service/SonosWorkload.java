@@ -58,15 +58,21 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ " depth int,\n"
 			+ "	created timestamp default now(),\n"
 			+ "	updated timestamp default now(),\n"
-			+ "	constraint topology_prikey PRIMARY KEY(id,parentid)\n"
+			+ "	constraint topology_prikey PRIMARY KEY(id,idtype,parentid)\n"
 			+ ") split into 48 tablets;";
 	
+//	private static final String CREATE_TOPOLOGY_INDEX = 
+//			"Create unique index if not exists topology_idx2 "
+//			+ "on topology(parentid, idtype desc, id asc);";
+
 	private static final String CREATE_TOPOLOGY_INDEX = 
 			"Create unique index if not exists topology_idx2 "
-			+ "on topology(parentid, idtype desc, id asc);";
+			+ "on topology(parentid, idtype asc, id asc) include "
+			+ "(idname, children, depth) WHERE parentid::text <> 'null'::text "
+			+ "AND idtype::text = 'LOCATION_GROUP'::text;";
 
 	private static final String DROP_TOPOLOGY_TABLE = 
-			"drop table if exists topology;";
+			"drop table if exists topology cascade;";
 	
 	private static final String TRUNCATE_TOPOLOGY_TABLE = "truncate topology";
 			
@@ -82,7 +88,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "	constraint mhhmap_prikey PRIMARY KEY(locId,mHHId,sonosId)\n"
 			+ ") split into 48 tablets;";
 	private static final String DROP_MHHMAP_TABLE = 
-			"drop table if exists mhhmap;";
+			"drop table if exists mhhmap cascade;";
 
 	private static final String TRUNCATE_MHHMAP_TABLE = "truncate mhhmap";
 
@@ -118,7 +124,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "?"
 			+ ");";
 	
-	private static final String TOP_DOWN_QUERY = 
+	private static final String TOP_DOWN_QUERY_old = 
 			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_idx2) */ WITH RECURSIVE locs AS ("
 			+ "	SELECT"
 			+ "		id,idtype,idname,parentid,children,depth"
@@ -126,7 +132,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "		topology"
 			+ "	WHERE"
 			+ "		id = ?"
-			+ "	UNION"
+			+ "	UNION ALL"
 			+ "		SELECT"
 			+ "			t.id,"
 			+ "			t.idtype,"
@@ -142,8 +148,38 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ " FROM "
 			+ "	locs;";
 	
+	private static final String TOP_DOWN_QUERY = 
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_idx2) IndexScan(t1 topology_idx2) */"
+			+ "	WITH RECURSIVE locs AS (\n"
+			+ "		    SELECT\n"
+			+ "		        id,idtype,idname,parentid,children,depth"
+			+ "		    FROM\n"
+			+ "		        topology\n"
+			+ "		    WHERE\n"
+			+ "		        id = ?"
+			+ "		        AND idtype IN ('USER', 'LOCATION_GROUP', 'LOCATION')\n"
+			+ "		    UNION ALL\n"
+			+ "		        SELECT\n"
+			+ "		            t.id,\n"
+			+ "		            t.idtype,\n"
+			+ "		            t.idname,\n"
+			+ "		            t.parentid,\n"
+			+ "		            t.children,\n"
+			+ "		            t.depth\n"
+			+ "		        FROM\n"
+			+ "		                topology t\n"
+			+ "		        INNER JOIN locs l ON t.parentid = l.id\n"
+			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> 'null'\n"
+			+ "		) SELECT\n"
+			+ "		    id,idtype,idname,parentid,children,depth\n"
+			+ "		    FROM\n"
+			+ "		    locs l\n"
+			+ "		  UNION ALL\n"
+			+ "		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth\n"
+			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> 'null';\n";
+
 	private static final String BOTTOM_UP_QUERY = 
-			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_idx2) */ WITH RECURSIVE locs AS ("
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_prikey) */ WITH RECURSIVE locs AS ("
 			+ " SELECT"
 			+ "     id,idtype,idname,parentid,children,depth"
 			+ " FROM"
@@ -165,31 +201,32 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "        id,idtype,idname,parentid,children,depth"
 			+ " FROM"
 			+ "        locs;";
-	
+
 	private static final String READ_TOPOLOGY = 
 			"   SELECT"
 			+ "    id,idtype,idname,parentid,children,depth"
 			+ " FROM"
 			+ "    topology"
 			+ " WHERE"
-			+ "    id = ?";
+			+ "    id = ?;";
 		
-	private static final String READ_ONLY_TRANSACTION = "SET TRANSACTION READ ONLY;";
+	private static final String READ_ONLY_TRANSACTION = "START TRANSACTION READ ONLY;";
 	private static final String FOLLOWER_READS = "SET yb_read_from_followers = TRUE;";
+	private static final String COMMIT = "commit;";
 	
 	private static final String BOTTOM_UP_FOLLOWER_READ = 
-			FOLLOWER_READS + READ_ONLY_TRANSACTION + BOTTOM_UP_QUERY;
+			READ_ONLY_TRANSACTION + FOLLOWER_READS + BOTTOM_UP_QUERY + COMMIT;
 	
 	private static final String TOP_DOWN_FOLLOWER_READ = 
-			FOLLOWER_READS + READ_ONLY_TRANSACTION + TOP_DOWN_QUERY;
+			READ_ONLY_TRANSACTION + FOLLOWER_READS + TOP_DOWN_QUERY + COMMIT;
 	
 	private static final String READ_TOPOLOGY_FOLLOWER_READ = 
-			FOLLOWER_READS + READ_ONLY_TRANSACTION + READ_TOPOLOGY;
+			READ_ONLY_TRANSACTION + FOLLOWER_READS + READ_TOPOLOGY + COMMIT;
 
 	private static final String BACKFILL_TRANSACTION =
 			"BEGIN TRANSACTION;" +
-					INSERT_TOPOLOGY_TABLE + 
-					INSERT_TOPOLOGY_TABLE + 
+					INSERT_TOPOLOGY_TABLE + // USER
+					INSERT_TOPOLOGY_TABLE + // LOCATION
 					INSERT_MHHMAP_TABLE +
 			"END TRANSACTION;";
 	
@@ -218,6 +255,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	private static final double MAX_LOCATION_GROUPS_PER_GROUP = 15.0;
 	private static final double AVG_MHHMAP_PER_LOCATION = 6;
 	
+	private static final int ROWS_TO_PRELOAD = 2000;
 	// NOTE: This class is NOT designed to be thread safe
 	private static class MutableInteger {
 		private int value;
@@ -285,7 +323,15 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			new WorkloadParamDesc("Top down read ratio", true, 0, 100, 10),
 			new WorkloadParamDesc("Bottom up read ratio", true, 0, 100, 10),
 			new WorkloadParamDesc("Point read ratio", true, 0, 100, 10),
-			new WorkloadParamDesc("Use local reads", true, false)
+			new WorkloadParamDesc("Use local reads", true, false),
+			
+			new WorkloadParamDesc("Hierarchy Depth 2", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 3", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 4", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 5", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 6", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 7", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 8", true, true)
 			)
 			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
 			.nameWorkload(TimerType.WORKLOAD2, "Hierarchy");
@@ -309,6 +355,30 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		);
 	}
 
+	public String formInClause(ParamValue[] values) {
+		StringBuffer sb = new StringBuffer();
+		boolean firstValue = true;
+		for (int i = 6; i <= 12; i++) {
+			if (values[i].getBoolValue()) {
+				if (firstValue) {
+					sb.append("AND depth in (");
+				}
+				else {
+					sb.append(",");
+				}
+				sb.append(i-4);
+				firstValue = false;
+			}
+		}
+		if (firstValue) {
+			return "";
+		}
+		else {
+			sb.append(")");
+			return sb.toString();
+		}
+	}
+	
 	@Override
 	public InvocationResult invokeWorkload(String workloadId, ParamValue[] values) {
 		WorkloadType type = WorkloadType.valueOf(workloadId);
@@ -333,7 +403,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 						values[2].getIntValue(),
 						values[3].getIntValue(),
 						values[4].getIntValue(),
-						values[5].getBoolValue()
+						values[5].getBoolValue(),
+						this.formInClause(values)
 					);
 				return new InvocationResult("Ok");
 				
@@ -397,28 +468,31 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	 }
 	
 	private void runPointRead(String uuid, boolean followerReads) {
-		String query = followerReads ? READ_TOPOLOGY_FOLLOWER_READ : READ_TOPOLOGY;
-		
-		long now = System.currentTimeMillis();
-		jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR},
-				new RowCallbackHandler() {
-					
-					@Override
-					public void processRow(ResultSet rs) throws SQLException {
-						if (LOGGER.isDebugEnabled()) {
-							LOGGER.debug(String.format(
-									"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
-								rs.getString("id"),
-								rs.getString("idtype"),
-								rs.getString("idname"),
-								rs.getString("parentid"),
-								rs.getInt("children"),
-								rs.getInt("depth")));
+
+		if (followerReads) {
+			String query = READ_TOPOLOGY_FOLLOWER_READ.replace("?", "'" + uuid + "'");
+			jdbcTemplate.execute(query);
+		}
+		else {
+			String query = followerReads ? READ_TOPOLOGY_FOLLOWER_READ : READ_TOPOLOGY;
+			jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR},
+					new RowCallbackHandler() {
+						
+						@Override
+						public void processRow(ResultSet rs) throws SQLException {
+							if (LOGGER.isDebugEnabled()) {
+								LOGGER.debug(String.format(
+										"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+									rs.getString("id"),
+									rs.getString("idtype"),
+									rs.getString("idname"),
+									rs.getString("parentid"),
+									rs.getInt("children"),
+									rs.getInt("depth")));
+							}
 						}
-					}
-				});
-		
-		System.out.printf("TOP DOWN query (%s) ran in %dms\n", uuid, System.currentTimeMillis() - now);
+					});
+		}
 	}
 	
 	private void createTables(boolean force) {
@@ -520,7 +594,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		int childrenCount = 0;
 		for (int i = 0; i < childrenAtThisLayer; i++) {
 			String thisChildId = generateUUID();
-			if (currentDepth == 0) {
+			if (currentDepth == 1) {
 				// Generate the location
 				String locationId = generateTopology(generateUUID(), parentId, IdType.LOCATION, 0, 1);
 				
@@ -531,7 +605,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			}
 			else {
 				int thisChildCount = this.generateChildrenForHierarchyLevel(userId, thisChildId, currentDepth-1, maxPlayers, maxItemsPerLayerInHeirarchy, generatedMhhMaps);
-				generateTopology(thisChildId, parentId, IdType.LOCATION_GROUP, thisChildCount, currentDepth-1);
+				generateTopology(thisChildId, parentId, IdType.LOCATION_GROUP, thisChildCount, currentDepth);
 				childrenCount += thisChildCount;
 			}
 		}
@@ -563,7 +637,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		// Set maximum items per layer in the hierarchy
 		itemsPerLayerInHeirarchy = Math.min(itemsPerLayerInHeirarchy, MAX_LOCATION_GROUPS_PER_GROUP);
 		
-		int childrenAtDepth = generateChildrenForHierarchyLevel(userId, userId, intermediateLayers, remainingMhhMaps, itemsPerLayerInHeirarchy, generatedMhhMaps);
+		int childrenAtDepth = generateChildrenForHierarchyLevel(userId, userId, depth-1, remainingMhhMaps, itemsPerLayerInHeirarchy, generatedMhhMaps);
 
 		generateTopology(userId, null, IdType.USER, childrenAtDepth, depth);
 		return userId;
@@ -665,8 +739,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	
 	
 	private List<String> getRandomTopologyList() {
-		List<String> results = new ArrayList<String>(2000);
-		jdbcTemplate.query("select id from topology limit 2000",
+		List<String> results = new ArrayList<String>(ROWS_TO_PRELOAD);
+		jdbcTemplate.query("select id from topology limit " + ROWS_TO_PRELOAD,
 			new RowCallbackHandler() {
 			
 				@Override
@@ -678,9 +752,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		return results;
 	}
 	
-	private List<String> getUserList() {
-		List<String> results = new ArrayList<String>(2000);
-		jdbcTemplate.query("select id from topology where parentid = 'null' limit 2000",
+	private List<String> getUserList(String inClause) {
+		List<String> results = new ArrayList<String>(ROWS_TO_PRELOAD);
+		jdbcTemplate.query("select id from topology where parentid = 'null' " + inClause + " limit " + ROWS_TO_PRELOAD,
 			new RowCallbackHandler() {
 			
 				@Override
@@ -693,8 +767,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	}
 	
 	private List<String> getLocationList() {
-		List<String> results = new ArrayList<String>(2000);
-		jdbcTemplate.query("select id from topology where idtype = 'LOCATION' limit 2000",
+		List<String> results = new ArrayList<String>(ROWS_TO_PRELOAD);
+		jdbcTemplate.query("select id from topology where idtype = 'LOCATION' limit " + ROWS_TO_PRELOAD,
 			new RowCallbackHandler() {
 			
 				@Override
@@ -713,10 +787,11 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			final int percentageTopDownReads,
 			final int percentageBottomUpReads, 
 			final int percentagePointReads, 
-			final boolean localReads) {
+			final boolean localReads,
+			final String inClause) {
 		
 		System.out.println("**** Preloading data...");
-		final List<String> users = getUserList();
+		final List<String> users = getUserList(inClause);
 		final List<String> locations = getLocationList();
 		final List<String> topology = getRandomTopologyList();
 		System.out.println("**** Preload of data done");

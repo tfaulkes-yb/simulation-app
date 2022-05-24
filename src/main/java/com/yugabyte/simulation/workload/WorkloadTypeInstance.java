@@ -12,13 +12,13 @@ public abstract class WorkloadTypeInstance {
 	public abstract boolean isComplete();
 	
 	public WorkloadTypeInstance() {
-		this.startTime = System.nanoTime();
+		this.startTime = System.currentTimeMillis();
 		this.workloadId = getType().getTypeName() + "_" + this.startTime;
 	}
 
 	public void terminate() {
 		this.terminated = true;
-		this.endTime = System.nanoTime();
+		this.endTime = System.currentTimeMillis();
 	}
 	
 	public boolean isTerminated() {
