@@ -109,14 +109,24 @@ export class AppComponent {
     this.valuesComputed = true;
   }
 
+  private refreshActiveTasks() {
+    //this.activeLoading = true;
+    this.dataSource.getActiveWorkloads().subscribe(workloads => {
+      this.activeLoading = false;
+      this.workloadStatuses = workloads;
+    });
+  }
+
+  timerId : any = null;
+  // Called when the tab changes.
   handleChange(e : any) {
-    console.log(e.index);
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
     if (e.index == 1) {
-      this.activeLoading = true;
-      this.dataSource.getActiveWorkloads().subscribe(workloads => {
-        this.activeLoading = false;
-        this.workloadStatuses = workloads;
-      });
+      this.refreshActiveTasks();
+      this.timerId = setInterval(() => this.refreshActiveTasks(), 2000);
     }
   }
 
@@ -126,11 +136,7 @@ export class AppComponent {
 
   terminateTask(workloadId : string) {
     this.dataSource.terminateWorkload(workloadId).subscribe( result => {
-      this.activeLoading = true;
-      this.dataSource.getActiveWorkloads().subscribe(workloads => {
-        this.activeLoading = false;
-        this.workloadStatuses = workloads;
-      });
+      this.refreshActiveTasks();
     });
   }
 
