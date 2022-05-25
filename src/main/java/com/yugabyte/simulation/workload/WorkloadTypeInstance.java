@@ -1,7 +1,7 @@
 package com.yugabyte.simulation.workload;
 
 public abstract class WorkloadTypeInstance {
-	private boolean terminated = false;
+	private volatile WorkloadStatusType status;
 	private Exception terminatingException = null;
 	
 	private final String workloadId;
@@ -14,15 +14,24 @@ public abstract class WorkloadTypeInstance {
 	public WorkloadTypeInstance() {
 		this.startTime = System.currentTimeMillis();
 		this.workloadId = getType().getTypeName() + "_" + this.startTime;
+		this.status = WorkloadStatusType.SUBMITTED;
+		this.doInitialize();
+		this.status = WorkloadStatusType.EXECUTING;
 	}
 
-	public void terminate() {
-		this.terminated = true;
+	protected void doTerminate() {}
+	
+	protected void doInitialize() {}
+
+	public final void terminate() {
+		this.status = WorkloadStatusType.TERMINATING;
+		this.doTerminate();
+		this.status = WorkloadStatusType.TERMINATED;
 		this.endTime = System.currentTimeMillis();
 	}
 	
 	public boolean isTerminated() {
-		return terminated;
+		return WorkloadStatusType.TERMINATED.equals(status);
 	}
 	
 	public void setTerminatedByException(Exception e) {
@@ -43,5 +52,9 @@ public abstract class WorkloadTypeInstance {
 	
 	public long getEndTime() {
 		return endTime;
+	}
+	
+	public WorkloadStatusType getStatus() {
+		return status;
 	}
 }

@@ -61,7 +61,7 @@ public class WorkloadSimulationController {
     	List<WorkloadStatus> statuses = new ArrayList<WorkloadStatus>();
     	for (WorkloadTypeInstance instance : activeWorkloads) {
     		statuses.add(new WorkloadStatus(instance.getWorkloadId(), instance.getStartTime(), instance.getEndTime(), 
-    				instance.isComplete() ? "COMPLETE" : instance.isTerminated() ? "TERMINATED" : "ACTIVE"));
+    				instance.getStatus().toString()));
     	}
     	return statuses;
     }

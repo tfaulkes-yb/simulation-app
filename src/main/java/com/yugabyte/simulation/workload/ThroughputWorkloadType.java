@@ -43,9 +43,11 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private final TimerService timerService;
 		private final AtomicLong idleTimeCounter;
 		private final AtomicInteger transactionCounter;
+		private final CallbackHandler initializationHandler;
+		private final CallbackHandler terminationHandler;
 	    private static final Logger LOGGER = LoggerFactory.getLogger(ThroughputWorkloadType.class);
 		
-		public ThreadManager(int desiredRate, int maxThreads, ExecutorService executor, ExecuteTask runner, Object customData, TimerService timerservice) {
+		public ThreadManager(int desiredRate, int maxThreads, ExecutorService executor, ExecuteTask runner, Object customData, TimerService timerservice, CallbackHandler initializationHandler, CallbackHandler terminationHandler) {
 			super();
 			this.desiredRate = desiredRate;
 			this.executor = executor;
@@ -57,6 +59,8 @@ public class ThroughputWorkloadType extends WorkloadType {
 			this.timerService = timerservice;
 			this.idleTimeCounter = new AtomicLong(0);
 			this.transactionCounter = new AtomicInteger(0);
+			this.initializationHandler = initializationHandler;
+			this.terminationHandler = terminationHandler;
 		}
 
 		public int getDesiredRate() {
@@ -85,12 +89,17 @@ public class ThroughputWorkloadType extends WorkloadType {
 		}
 		
 		private void createAndSubmitThread() {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(String.format("Creating and Submitting a new thread, %d -> %d, rate = %f\n", this.getCurrentThreadCount(), this.getCurrentThreadCount()+1, this.getCurrentRate()));
+			if (this.currentThreads < this.maxThreads) {
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.debug(String.format("Creating and Submitting a new thread, %d -> %d, rate = %f\n", this.getCurrentThreadCount(), this.getCurrentThreadCount()+1, this.getCurrentRate()));
+				}
+				if (!this.terminate.get()) {
+					this.executor.submit(new WorkerThread(threadDelay, idleTimeCounter, transactionCounter, terminate, runner, customData, timerService, initializationHandler, terminationHandler));
+					this.currentThreads++;
+				}
 			}
-			if (!this.terminate.get()) {
-				this.executor.submit(new WorkerThread(threadDelay, idleTimeCounter, transactionCounter, terminate, runner, customData, timerService));
-				this.currentThreads++;
+			else {
+				LOGGER.warn("Cannot create a new worker thread: current threads = " + this.currentThreads + ", max allowed = " + this.maxThreads);
 			}
 		}
 		
@@ -183,8 +192,10 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private Object threadData;
 		private final AtomicLong idleTimeCounter;
 		private final AtomicInteger transactionCounter;
+		private final CallbackHandler initializationHandler;
+		private final CallbackHandler terminationHandler;
 		
-		public WorkerThread(AtomicInteger threadDelay, AtomicLong idleTimeCounter, AtomicInteger transactionCounter, AtomicBoolean terminate, ExecuteTask task, Object customData, TimerService timerService) {
+		public WorkerThread(AtomicInteger threadDelay, AtomicLong idleTimeCounter, AtomicInteger transactionCounter, AtomicBoolean terminate, ExecuteTask task, Object customData, TimerService timerService, CallbackHandler initializationHandler, CallbackHandler terminationHandler) {
 			this.threadDelay = threadDelay;
 			this.task = task;
 			this.terminate = terminate;
@@ -193,6 +204,8 @@ public class ThroughputWorkloadType extends WorkloadType {
 			this.timer = timerService.getTimer(TimerType.WORKLOAD2);
 			this.idleTimeCounter =  idleTimeCounter;
 			this.transactionCounter = transactionCounter;
+			this.initializationHandler = initializationHandler;
+			this.terminationHandler = terminationHandler;
 		}
 		
 		private void sleep(int milliseconds) {
@@ -208,34 +221,49 @@ public class ThroughputWorkloadType extends WorkloadType {
 		
 		@Override
 		public void run() {
-			sleep(ThreadLocalRandom.current().nextInt(threadDelay.get()));
-			while (!terminate.get()) {
-				timer.start();
-				long timeInNs;
-				try {
-					this.threadData = task.run(customData, threadData);
-					timeInNs = timer.end(ExecutionStatus.SUCCESS);
+			if (this.initializationHandler != null) {
+				this.threadData = this.initializationHandler.invoke(customData, threadData);
+			}
+			try {
+				sleep(ThreadLocalRandom.current().nextInt(threadDelay.get()));
+				while (!terminate.get()) {
+					timer.start();
+					long timeInNs;
+					try {
+						this.threadData = task.run(customData, threadData);
+						timeInNs = timer.end(ExecutionStatus.SUCCESS);
+					}
+					catch (Exception e) {
+						timeInNs = timer.end(ExecutionStatus.ERROR);
+					}
+					this.transactionCounter.incrementAndGet();
+					int idleTime = threadDelay.get() - (int)(timeInNs / 1000000);
+					if (idleTime > 0) {
+						this.idleTimeCounter.addAndGet(idleTime);
+						sleep(idleTime);
+					}
 				}
-				catch (Exception e) {
-					timeInNs = timer.end(ExecutionStatus.ERROR);
-				}
-				this.transactionCounter.incrementAndGet();
-				int idleTime = threadDelay.get() - (int)(timeInNs / 1000000);
-				if (idleTime > 0) {
-					this.idleTimeCounter.addAndGet(idleTime);
-					sleep(idleTime);
+			}
+			finally {
+				if (this.terminationHandler != null) {
+					this.terminationHandler.invoke(customData, threadData);
 				}
 			}
 		}
 	}
 	
+	public static interface CallbackHandler {
+		Object invoke(Object customData, Object threadData);
+	}
 	public class ThroughputWorkloadInstance extends WorkloadTypeInstance {
 		private final ExecutorService executor = Executors.newCachedThreadPool();
 		private Object customData = null;
 		private TimerService timerService;
 		private ThreadManager threadManager;
 		private Thread threadManagerThread;
-		private int maxThreads = 96;
+		private int maxThreads = 1;
+		private CallbackHandler threadTerminationHandler = null;
+		private CallbackHandler threadInitializationHandler = null;
 		
 		public ThroughputWorkloadInstance(TimerService timerService) {
 			this.timerService = timerService;
@@ -255,6 +283,16 @@ public class ThroughputWorkloadType extends WorkloadType {
 			return maxThreads;
 		}
 		
+		public ThroughputWorkloadInstance onThreadTermination(CallbackHandler handler) {
+			this.threadTerminationHandler = handler;
+			return this;
+		}
+		
+		public ThroughputWorkloadInstance onThreadInitialization(CallbackHandler handler) {
+			this.threadInitializationHandler = handler;
+			return this;
+		}
+		
 		@Override
 		public WorkloadType getType() {
 			return ThroughputWorkloadType.this;
@@ -265,9 +303,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 		}
 		
 		@Override
-		public void terminate() {
-			super.terminate();
-			
+		public void doTerminate() {
 			try {
 				this.threadManager.terminate();
 			} catch (InterruptedException e) {
@@ -278,12 +314,13 @@ public class ThroughputWorkloadType extends WorkloadType {
 			return this.threadManager == null ? 0.0 : this.threadManager.getCurrentRate();
 		}
 		
-		public void execute(int throughputRate, ExecuteTask runner) {
-			this.threadManager = new ThreadManager(throughputRate, maxThreads, executor, runner, this.customData, this.timerService);
+		public ThroughputWorkloadInstance execute(int throughputRate, ExecuteTask runner) {
+			this.threadManager = new ThreadManager(throughputRate, maxThreads, executor, runner, this.customData, this.timerService, this.threadInitializationHandler, this.threadTerminationHandler);
 			this.threadManagerThread = new Thread(threadManager, "Thread Manager for " + this.getWorkloadId());
 			this.threadManagerThread.setDaemon(true);
 			this.threadManagerThread.setPriority(Thread.MAX_PRIORITY);
 			this.threadManagerThread.start();
+			return this;
 		}
 		
 		public int getDesiredRate() {

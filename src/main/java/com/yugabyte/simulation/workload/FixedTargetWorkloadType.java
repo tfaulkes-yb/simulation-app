@@ -234,7 +234,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		}
 	}
 	
-	public class ThroughputWorkloadInstance extends WorkloadTypeInstance {
+	public class FixedTargetWorkloadInstance extends WorkloadTypeInstance {
 		private final ExecutorService executor = Executors.newCachedThreadPool();
 		private Object customData = null;
 		private TimerService timerService;
@@ -242,17 +242,17 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private Thread threadManagerThread;
 		private int maxThreads = 96;
 		
-		public ThroughputWorkloadInstance(TimerService timerService) {
+		public FixedTargetWorkloadInstance(TimerService timerService) {
 			this.timerService = timerService;
 		}
-		public ThroughputWorkloadInstance setCustomData(Object customData) {
+		public FixedTargetWorkloadInstance setCustomData(Object customData) {
 			this.customData = customData;
 			return this;
 		}
 		public Object getCustomData() {
 			return customData;
 		}
-		public ThroughputWorkloadInstance setMaxThreads(int maxThreads) {
+		public FixedTargetWorkloadInstance setMaxThreads(int maxThreads) {
 			this.maxThreads = maxThreads;
 			return this;
 		}
@@ -270,9 +270,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		}
 		
 		@Override
-		public void terminate() {
-			super.terminate();
-			
+		public void doTerminate() {
 			try {
 				this.threadManager.terminate();
 			} catch (InterruptedException e) {
@@ -306,7 +304,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 	}
 
 	@Override
-	public ThroughputWorkloadInstance createInstance(TimerService timerService) {
-		return new ThroughputWorkloadInstance(timerService);
+	public FixedTargetWorkloadInstance createInstance(TimerService timerService) {
+		return new FixedTargetWorkloadInstance(timerService);
 	}
 }
