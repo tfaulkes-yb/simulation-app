@@ -11,12 +11,12 @@ spring:
       maxLifeTime: 3000000
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
       data-source-properties:
-        serverName: 192.168.86.232
+        serverName: 192.168.86.231
         portNumber: 5433
         #loadBalance: "true"
         databaseName: yugabyte
         additionalEndpoints: 192.168.86.235:5433,192.168.86.237:5433
-        topologyKeys: Denver.az2
+        #topologyKeys: Denver.az2
 #        ssl: ${ssl:false}
 #        sslmode: ${sslmode:disable}
 #        sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}

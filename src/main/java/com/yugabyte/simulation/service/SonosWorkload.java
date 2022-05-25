@@ -66,9 +66,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "	constraint topology_prikey PRIMARY KEY(id,idtype,parentid)\n"
 			+ ") split into 48 tablets;";
 	
-//	private static final String CREATE_TOPOLOGY_INDEX = 
-//			"Create unique index if not exists topology_idx2 "
-//			+ "on topology(parentid, idtype desc, id asc);";
+	private static final String CREATE_TOPOLOGY_INDEX_old = 
+			"Create unique index if not exists topology_idx2 "
+			+ "on topology(parentid, idtype desc, id asc);";
 
 	private static final String CREATE_TOPOLOGY_INDEX = 
 			"Create unique index if not exists topology_idx2 "
@@ -240,6 +240,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		LOAD_DATA,
 		RUN_SIMULATION,
 		RUN_SIMULATION_JDBC,
+		RUN_SIMULATION_OLD,
+		RUN_SIMULATION_OLD_JDBC,
 		RUN_TOP_DOWN_QUERY,
 		RUN_BOTTOM_UP_QUERY
 	}		
@@ -321,6 +323,16 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 	}
 	
+	private PreparedStatement getTopDownPreparedStatementOld(Connection conn) {
+		try {
+			return conn.prepareStatement(TOP_DOWN_QUERY);
+		}
+		catch (SQLException sqlException) {
+			SQLExceptionTranslator sqlExceptionTranslator = new SQLExceptionSubclassTranslator();
+			throw sqlExceptionTranslator.translate("Runner Thread", "Closing prepared Statement", sqlException);
+		}
+	}
+	
 	private void releasePrearedStatement(PreparedStatement stmt) {
 		try {
 			stmt.close();
@@ -352,7 +364,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			WorkloadType.CREATE_TABLES.toString(),
 			"Create Tables", 
 			"Create the simulation tables. If the tables are already created they will not be re-created unless 'force' is set to true",
-			new WorkloadParamDesc("force", ParamType.BOOLEAN, false, new ParamValue(false))
+			new WorkloadParamDesc("force", false, false),
+			new WorkloadParamDesc("old index", false, false)
 		);
 	
 	private WorkloadDesc loadDataWorkload =  new WorkloadDesc(
@@ -412,6 +425,52 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
 			.nameWorkload(TimerType.WORKLOAD2, "Hierarchy");
 	
+	private WorkloadDesc runningWorkloadOldQuery = new WorkloadDesc(
+			WorkloadType.RUN_SIMULATION_OLD.toString(),
+			"Simulation Using Older query",
+			"Run a simulation of the day-to-day activities of Sonos. This includes adding locations and looking at component hierarchies",
+			new WorkloadParamDesc("Throughput (tps)", true, 1, 1000000, 500),
+			new WorkloadParamDesc("Backfill ratio", true, 0, 0, 0),
+			new WorkloadParamDesc("Top down read ratio", true, 0, 100, 10),
+			new WorkloadParamDesc("Bottom up read ratio", true, 0, 0, 0),
+			new WorkloadParamDesc("Point read ratio", true, 0, 0, 0),
+			new WorkloadParamDesc("Use local reads", true, false),
+			
+			new WorkloadParamDesc("Hierarchy Depth 2", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 3", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 4", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 5", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 6", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 7", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 8", true, true),
+			new WorkloadParamDesc("Max Threads", true, 1, 500, 64)
+			)
+			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
+			.nameWorkload(TimerType.WORKLOAD2, "Hierarchy");
+	
+	private WorkloadDesc runningWorkloadOldQueryJdbc = new WorkloadDesc(
+			WorkloadType.RUN_SIMULATION_OLD_JDBC.toString(),
+			"Simulation Using Older query via JDBC",
+			"Run a simulation of the day-to-day activities of Sonos is JDBC. This includes adding locations and looking at component hierarchies",
+			new WorkloadParamDesc("Throughput (tps)", true, 1, 1000000, 500),
+			new WorkloadParamDesc("Backfill ratio", true, 0, 0, 0),
+			new WorkloadParamDesc("Top down read ratio", true, 0, 100, 10),
+			new WorkloadParamDesc("Bottom up read ratio", true, 0, 0, 0),
+			new WorkloadParamDesc("Point read ratio", true, 0, 0, 0),
+			new WorkloadParamDesc("Use local reads", true, false),
+			
+			new WorkloadParamDesc("Hierarchy Depth 2", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 3", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 4", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 5", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 6", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 7", true, true),
+			new WorkloadParamDesc("Hierarchy Depth 8", true, true),
+			new WorkloadParamDesc("Max Threads", true, 1, 500, 64)
+			)
+			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
+			.nameWorkload(TimerType.WORKLOAD2, "Hierarchy");
+	
 	private WorkloadDesc runTopDownQuery = new WorkloadDesc(
 			WorkloadType.RUN_TOP_DOWN_QUERY.toString(),
 			"Top Down Query",
@@ -427,7 +486,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	@Override
 	public List<WorkloadDesc> getWorkloads() {
 		return Arrays.asList(
-			createTablesWorkload, loadDataWorkload, runningWorkload, runningWorkloadJdbc, runTopDownQuery, runBottomUpQuery
+			createTablesWorkload, loadDataWorkload, runningWorkload, runningWorkloadJdbc, runningWorkloadOldQuery, runningWorkloadOldQueryJdbc, runTopDownQuery, runBottomUpQuery
 		);
 	}
 
@@ -462,7 +521,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			switch (type) {
 			case CREATE_TABLES:
 				timerService.setCurrentWorkload(createTablesWorkload);
-				this.createTables(values[0].getBoolValue());
+				this.createTables(values[0].getBoolValue(), values[1].getBoolValue());
 				timerService.removeCurrentWorkload(createTablesWorkload);
 				return new InvocationResult("Ok");
 			
@@ -498,12 +557,38 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 					);
 				return new InvocationResult("Ok");
 				
+			case RUN_SIMULATION_OLD:
+				this.runSimulationOldQuery(
+						values[0].getIntValue(), 
+						values[1].getIntValue(), 
+						values[2].getIntValue(),
+						values[3].getIntValue(),
+						values[4].getIntValue(),
+						values[5].getBoolValue(),
+						this.formInClause(values),
+						values[13].getIntValue()
+					);
+				return new InvocationResult("Ok");
+				
+			case RUN_SIMULATION_OLD_JDBC:
+				this.runSimulationOldQuery(
+						values[0].getIntValue(), 
+						values[1].getIntValue(), 
+						values[2].getIntValue(),
+						values[3].getIntValue(),
+						values[4].getIntValue(),
+						values[5].getBoolValue(),
+						this.formInClause(values),
+						values[13].getIntValue()
+					);
+				return new InvocationResult("Ok");
+				
 			case RUN_TOP_DOWN_QUERY:
-				this.runTopDownQuery(values[0].getStringValue(), false);
+				this.runTopDownQuerySingle(values[0].getStringValue(), false);
 				return new InvocationResult("Ok");
 				
 			case RUN_BOTTOM_UP_QUERY:
-				this.runBottomUpQuery(values[0].getStringValue(), false);
+				this.runBottomUpQuerySingle(values[0].getStringValue(), false);
 				return new InvocationResult("Ok");
 				
 			}
@@ -515,7 +600,6 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	}
 	
 	private void runTopDownQueryWithJdbc(String uuid, boolean followerReads, Statements stmts) {
-		Connection conn = null;
 		ResultSet rs = null;
 		try {
 			stmts.getTopDownPreparedStatement().setString(1, uuid);
@@ -545,7 +629,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			}
 		}
 	}
-	
+
 	private void runTopDownQuery(String uuid, boolean followerReads) {
 		String query = followerReads ? TOP_DOWN_FOLLOWER_READ : TOP_DOWN_QUERY;	
 		jdbcTemplate.query(TOP_DOWN_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
@@ -567,6 +651,69 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				});
 	 }
 	
+	private void runTopDownQueryOld(String uuid, boolean followerReads) {
+		String query = followerReads ? TOP_DOWN_FOLLOWER_READ : TOP_DOWN_QUERY_old;	
+		jdbcTemplate.query(TOP_DOWN_QUERY_old, new Object[] {uuid}, new int[] {Types.VARCHAR},
+				new RowCallbackHandler() {
+					
+					@Override
+					public void processRow(ResultSet rs) throws SQLException {
+						if (LOGGER.isDebugEnabled()) {
+							LOGGER.debug(String.format(
+								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+								rs.getString("id"),
+								rs.getString("idtype"),
+								rs.getString("idname"),
+								rs.getString("parentid"),
+								rs.getInt("children"),
+								rs.getInt("depth")));
+						}
+					}
+				});
+	 }
+	
+	private void runTopDownQuerySingle(String uuid, boolean followerReads) {
+		long now = System.nanoTime();
+		jdbcTemplate.query(TOP_DOWN_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
+				new RowCallbackHandler() {
+					
+					@Override
+					public void processRow(ResultSet rs) throws SQLException {
+						System.out.printf(
+							"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+							rs.getString("id"),
+							rs.getString("idtype"),
+							rs.getString("idname"),
+							rs.getString("parentid"),
+							rs.getInt("children"),
+							rs.getInt("depth"));
+					}
+				});
+		System.out.printf("Results for top down query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
+	 }
+
+
+	private void runBottomUpQuerySingle(String uuid, boolean followerReads) {
+		long now = System.nanoTime();
+		jdbcTemplate.query(BOTTOM_UP_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
+				new RowCallbackHandler() {
+					
+					@Override
+					public void processRow(ResultSet rs) throws SQLException {
+						System.out.printf(
+									"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+								rs.getString("id"),
+								rs.getString("idtype"),
+								rs.getString("idname"),
+								rs.getString("parentid"),
+								rs.getInt("children"),
+								rs.getInt("depth"));
+					}
+				});
+		System.out.printf("Results for bottom up query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
+	 }
+	
+
 	private void runBottomUpQuery(String uuid, boolean followerReads) {
 		String query = followerReads ? BOTTOM_UP_FOLLOWER_READ : BOTTOM_UP_QUERY;
 		
@@ -617,7 +764,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 	}
 	
-	private void createTables(boolean force) {
+	private void createTables(boolean force, boolean oldIndex) {
 		FixedStepsWorkloadType jobType = force ? createTablesWithTruncateWorkloadType : createTablesWorkloadType;
 		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
 		workloadManager.registerWorkloadInstance(workload);
@@ -633,7 +780,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				jdbcTemplate.execute(CREATE_MHHMAP_TABLE);
 				break;
 			case CREATE_TOPOLOGY_STEP:
-				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + CREATE_TOPOLOGY_INDEX);
+				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + (oldIndex ? CREATE_TOPOLOGY_INDEX_old : CREATE_TOPOLOGY_INDEX));
 				break;
 			}
 		});
@@ -964,9 +1111,102 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		workloadManager.registerWorkloadInstance(instance);
 		instance
 			.onThreadInitialization((customData, threadData) -> {
-				System.out.printf("Thread %d: initializing connection\n", Thread.currentThread().getId());
 				Connection conn = getConnection();
 				Statements stmts = new Statements(conn, getTopDownPreparedStatement(conn));
+				System.out.printf("Thread %d: connection created: %s\n", Thread.currentThread().getId(), stmts.toString());
+				return stmts;
+			})
+			.onThreadTermination((customData, threadData) -> {
+				Statements stmts = (Statements)threadData;
+				this.releasePrearedStatement(stmts.getTopDownPreparedStatement());
+				this.releaseConnection(stmts.getConn());
+				return null;
+			})
+			.execute(tps, (customData, threadData) -> {
+				Statements stmts = (Statements)threadData;
+				Random random = ThreadLocalRandom.current();
+				int value = ThreadLocalRandom.current().nextInt(totalCount);
+				if (value < percentageBackfills) {
+					performBackfillWrite();
+				}
+				else if (value < percentageBackfills + percentageTopDownReads) {
+					runTopDownQueryWithJdbc(users.get(random.nextInt(users.size())), localReads, stmts);
+				}
+				else if (value < percentageBackfills + percentageTopDownReads + percentageBottomUpReads) {
+					runBottomUpQuery(locations.get(random.nextInt(locations.size())), localReads);
+				}
+				else {
+					runPointRead(topology.get(random.nextInt(topology.size())), localReads);
+				}
+				
+				return stmts;
+			});
+	}
+	
+	private void runSimulationOldQuery(
+			final int tps, 
+			final int percentageBackfills, 
+			final int percentageTopDownReads,
+			final int percentageBottomUpReads, 
+			final int percentagePointReads, 
+			final boolean localReads,
+			final String inClause,
+			final int maxThreads) {
+		
+		System.out.println("**** Preloading data...");
+		final List<String> users = getUserList(inClause);
+		final List<String> locations = getLocationList();
+		final List<String> topology = getRandomTopologyList();
+		System.out.println("**** Preload of data done");
+		
+		final int totalCount = percentageBackfills + percentageTopDownReads + percentageBottomUpReads + percentagePointReads; 
+		ThroughputWorkloadInstance instance = runInstanceType.createInstance(timerService).setMaxThreads(maxThreads);
+		workloadManager.registerWorkloadInstance(instance);
+		instance
+			.execute(tps, (customData, threadData) -> {
+				Random random = ThreadLocalRandom.current();
+				int value = ThreadLocalRandom.current().nextInt(totalCount);
+				if (value < percentageBackfills) {
+					performBackfillWrite();
+				}
+				else if (value < percentageBackfills + percentageTopDownReads) {
+					runTopDownQueryOld(users.get(random.nextInt(users.size())), localReads);
+				}
+				else if (value < percentageBackfills + percentageTopDownReads + percentageBottomUpReads) {
+					runBottomUpQuery(locations.get(random.nextInt(locations.size())), localReads);
+				}
+				else {
+					runPointRead(topology.get(random.nextInt(topology.size())), localReads);
+				}
+				
+				return null;
+			});
+	}
+	
+	private void runSimulationJdbcOldQuery(
+			final int tps, 
+			final int percentageBackfills, 
+			final int percentageTopDownReads,
+			final int percentageBottomUpReads, 
+			final int percentagePointReads, 
+			final boolean localReads,
+			final String inClause,
+			final int maxThreads) {
+		
+		System.out.println("**** Preloading data...");
+		final List<String> users = getUserList(inClause);
+		final List<String> locations = getLocationList();
+		final List<String> topology = getRandomTopologyList();
+		System.out.println("**** Preload of data done");
+		
+		final int totalCount = percentageBackfills + percentageTopDownReads + percentageBottomUpReads + percentagePointReads; 
+		ThroughputWorkloadInstance instance = runInstanceType.createInstance(timerService).setMaxThreads(maxThreads);
+		workloadManager.registerWorkloadInstance(instance);
+		instance
+			.onThreadInitialization((customData, threadData) -> {
+				System.out.printf("Thread %d: initializing connection\n", Thread.currentThread().getId());
+				Connection conn = getConnection();
+				Statements stmts = new Statements(conn, getTopDownPreparedStatementOld(conn));
 				System.out.printf("Thread %d: connection created: %s\n", Thread.currentThread().getId(), stmts.toString());
 				return stmts;
 			})
@@ -998,4 +1238,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				return stmts;
 			});
 	}
+	
+
+
 }
