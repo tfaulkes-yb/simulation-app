@@ -28,193 +28,38 @@ import ch.qos.logback.core.recovery.ResilientSyslogOutputStream;
  */
 public class FixedTargetWorkloadType extends WorkloadType {
 	
+	
+			
 	public interface ExecuteTask {
 		public Object run(Object customData, Object threadData);
 	}
 	
-	private static class ThreadManager implements Runnable {
-		private volatile int desiredRate;
-		private volatile double currentRate;
-		private ExecutorService executor;
-		private ExecuteTask runner;
-		private final Object customData;
-		private final AtomicBoolean terminate = new AtomicBoolean(false);
-		private static final int DEFAULT_PROCESSING_TIME_MS = 10;
-		private static final int PASS_INTERVAL_MSECS = 3000;
-		private static final int WARMUP_INTERVALS = 5;
-		private static final double UPPER_TOLERANCE = 1.1;
-		private static final double AIMING_TOLERANCE = 1.07;
-		private final AtomicInteger threadDelay;
-		private final int maxThreads;
-		private int currentThreads = 0;
-		private final TimerService timerService;
-		private final AtomicLong idleTimeCounter;
-		private final AtomicInteger transactionCounter;
-	    private static final Logger LOGGER = LoggerFactory.getLogger(FixedTargetWorkloadType.class);
-		
-		public ThreadManager(int desiredRate, int maxThreads, ExecutorService executor, ExecuteTask runner, Object customData, TimerService timerservice) {
-			super();
-			this.desiredRate = desiredRate;
-			this.executor = executor;
-			this.runner = runner;
-			this.customData = customData;
-			this.maxThreads = maxThreads;
-			this.currentThreads = 0;
-			this.threadDelay = new AtomicInteger();
-			this.timerService = timerservice;
-			this.idleTimeCounter = new AtomicLong(0);
-			this.transactionCounter = new AtomicInteger(0);
-		}
 
-		public int getDesiredRate() {
-			return desiredRate;
-		}
-		
-		public void setDesiredRate(int desiredRate) {
-			this.desiredRate = desiredRate;
-		}
-		
-		public void terminate() throws InterruptedException {
-			this.terminate.set(true);
-			this.executor.shutdown();
-			executor.awaitTermination(1, TimeUnit.DAYS);
-		}
-		
-		public double getCurrentRate() {
-			return currentRate;
-		}
-		
-		public int getCurrentThreadCount() {
-			return this.currentThreads;
-		}
-		private int getNeededThreads(int avgDelay) {
-			return Math.max(1, Math.min(this.maxThreads, this.desiredRate * avgDelay/ 1000));
-		}
-		
-		private void createAndSubmitThread() {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(String.format("Creating and Submitting a new thread, %d -> %d, rate = %f\n", this.getCurrentThreadCount(), this.getCurrentThreadCount()+1, this.getCurrentRate()));
-			}
-			this.executor.submit(new WorkerThread(threadDelay, idleTimeCounter, transactionCounter, terminate, runner, customData, timerService));
-			this.currentThreads++;			
-		}
-		
-		private void setThreadDelay(int delay) {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("Setting thread delay to " + threadDelay);
-			}
-			this.threadDelay.set(delay);
-		}
-		
-		@Override
-		public void run() {
-			// Create the initial threads
-			int warmupIntervals = WARMUP_INTERVALS;
-			int defaultNumberOfThreads = getNeededThreads(DEFAULT_PROCESSING_TIME_MS);
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("Default threads = " + defaultNumberOfThreads);
-			}
-			this.setThreadDelay(DEFAULT_PROCESSING_TIME_MS);
-			for (int i = 0; i < defaultNumberOfThreads; i++) {
-				this.createAndSubmitThread();
-			}
-			
-			while (!this.terminate.get()) {
-				try {
-					Thread.sleep(PASS_INTERVAL_MSECS);
-				} catch (InterruptedException e) {
-					this.terminate.set(true);
-				}
-				long idleTimeThisPass = idleTimeCounter.getAndSet(0);
-				int transactionsThisPass = transactionCounter.getAndSet(0);
-				double tps = transactionsThisPass * (1000.0/PASS_INTERVAL_MSECS);
-				double idleTimePerSecond = idleTimeThisPass * (1000.0/PASS_INTERVAL_MSECS);
-				this.currentRate = tps;
-				
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug(String.format("tps = %f, desired rate = %d (%f), threads = %d, current rate = %f, idleTimePerSecondPerThread = %f\n", 
-						tps, desiredRate, desiredRate *AIMING_TOLERANCE, currentThreads, getCurrentRate(), idleTimePerSecond / this.currentThreads));
-				}
-				
-				if (warmupIntervals > 0) {
-					warmupIntervals--;
-					System.out.printf("Warming up, %d remaining\n", warmupIntervals);
-				}
-				else {
-					if (tps > desiredRate * UPPER_TOLERANCE) {
-						// Going too fast, slow down
-						// Allow to be within 5% tolerance
-						if (LOGGER.isDebugEnabled()) {
-							LOGGER.debug(String.format("Running too fast, %d / %d = %d\n", this.desiredRate, this.currentThreads, this.desiredRate/this.currentThreads));
-						}
-						this.setThreadDelay(1000 * this.currentThreads / this.desiredRate);
-					}
-					else if (tps < desiredRate) {
-						// we're going too slowly, see if there's any capacity to increase it
-						int optimalThreadDelay = Math.floorDiv(1000 * this.currentThreads, (int)(this.desiredRate * AIMING_TOLERANCE));
-						int availableTimePerThreadPerSecond = (int)(idleTimePerSecond / this.currentThreads);
-	
-						if (LOGGER.isDebugEnabled()) {
-							LOGGER.debug(String.format("Running too slow, optimal thread delay = %d, current threadDelay = %d, idleTimePerSecondPerThread = %d\n",
-								optimalThreadDelay, threadDelay.get(), availableTimePerThreadPerSecond));
-						}
-						
-						if (optimalThreadDelay <= threadDelay.get() && availableTimePerThreadPerSecond >= 100) {
-							// There's at least 100ms spare per thread per second, try lowering the thread delay
-							if (threadDelay.get() - availableTimePerThreadPerSecond < optimalThreadDelay) {
-								this.setThreadDelay(optimalThreadDelay);
-							}
-							else {
-								this.setThreadDelay(this.threadDelay.get() - availableTimePerThreadPerSecond);
-							}
-						}
-						else {
-							// We need to increase the threads
-							this.createAndSubmitThread();
-							this.setThreadDelay(Math.floorDiv(1000 * this.currentThreads, (int)(this.desiredRate * AIMING_TOLERANCE)));						
-						}
-					}
-				}
-			}
-		}
-	}
-	
 	private static class WorkerThread implements Runnable {
-		private final AtomicInteger threadDelay;
 		private final ExecuteTask task;
 		private final AtomicBoolean terminate;
 		private final Object customData;
 		private final Timer timer;
 		private Object threadData;
-		private final AtomicLong idleTimeCounter;
-		private final AtomicInteger transactionCounter;
+		private final AtomicLong completedCounter;
+		private final AtomicLong startedCounter;
+		private final long target;
 		
-		public WorkerThread(AtomicInteger threadDelay, AtomicLong idleTimeCounter, AtomicInteger transactionCounter, AtomicBoolean terminate, ExecuteTask task, Object customData, TimerService timerService) {
-			this.threadDelay = threadDelay;
-			this.task = task;
+
+		public WorkerThread(int threadId, AtomicBoolean terminate, AtomicLong completedCounter, AtomicLong startedCounter, long target, Object customData, TimerService timerService, ExecuteTask task) {
 			this.terminate = terminate;
 			this.customData = customData;
 			this.threadData = null;
 			this.timer = timerService.getTimer(TimerType.WORKLOAD2);
-			this.idleTimeCounter =  idleTimeCounter;
-			this.transactionCounter = transactionCounter;
-		}
-		
-		private void sleep(int milliseconds) {
-			if (milliseconds <= 1 ) {
-				return;
-			}
-			try {
-				Thread.sleep(milliseconds);
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Interrupted", e);
-			}
+			this.task = task;
+			this.completedCounter = completedCounter;
+			this.startedCounter = startedCounter;
+			this.target = target;
 		}
 		
 		@Override
 		public void run() {
-			sleep(ThreadLocalRandom.current().nextInt(threadDelay.get()));
-			while (!terminate.get()) {
+			while (!terminate.get() && startedCounter.incrementAndGet() < target) {
 				timer.start();
 				long timeInNs;
 				try {
@@ -224,23 +69,20 @@ public class FixedTargetWorkloadType extends WorkloadType {
 				catch (Exception e) {
 					timeInNs = timer.end(ExecutionStatus.ERROR);
 				}
-				this.transactionCounter.incrementAndGet();
-				int idleTime = threadDelay.get() - (int)(timeInNs / 1000000);
-				if (idleTime > 0) {
-					this.idleTimeCounter.addAndGet(idleTime);
-					sleep(idleTime);
-				}
+				this.completedCounter.incrementAndGet();
 			}
 		}
 	}
 	
 	public class FixedTargetWorkloadInstance extends WorkloadTypeInstance {
-		private final ExecutorService executor = Executors.newCachedThreadPool();
+		private AtomicLong completedCounter = new AtomicLong(0);
+		private AtomicLong startedCounter = new AtomicLong(0);
+		private AtomicBoolean terminate = new AtomicBoolean(false);
+		private long startTime = 0;
+		private ExecutorService executor = null;
+		private long target = 0;
 		private Object customData = null;
 		private TimerService timerService;
-		private ThreadManager threadManager;
-		private Thread threadManagerThread;
-		private int maxThreads = 96;
 		
 		public FixedTargetWorkloadInstance(TimerService timerService) {
 			this.timerService = timerService;
@@ -251,13 +93,6 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		}
 		public Object getCustomData() {
 			return customData;
-		}
-		public FixedTargetWorkloadInstance setMaxThreads(int maxThreads) {
-			this.maxThreads = maxThreads;
-			return this;
-		}
-		public int getMaxThreads() {
-			return maxThreads;
 		}
 		
 		@Override
@@ -272,35 +107,50 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		@Override
 		public void doTerminate() {
 			try {
-				this.threadManager.terminate();
+				this.terminate.set(true);
+				if (this.executor != null) {
+					this.executor.shutdown();
+					this.executor.awaitTermination(1, TimeUnit.DAYS);
+				}
 			} catch (InterruptedException e) {
 			}
 		}
-		
-		public double getCurrentRate() {
-			return this.threadManager == null ? 0.0 : this.threadManager.getCurrentRate();
+
+		public void execute(int numThreads, int target, ExecuteTask runner) {
+			this.executor = Executors.newFixedThreadPool(numThreads);
+			this.startTime = System.currentTimeMillis();
+			for (int i = 0; i < numThreads; i++) {
+				WorkerThread worker = new WorkerThread(i, terminate, completedCounter, startedCounter, target, customData, timerService, runner);
+				executor.submit(worker);
+			}
 		}
 		
-		public void execute(int throughputRate, ExecuteTask runner) {
-			this.threadManager = new ThreadManager(throughputRate, maxThreads, executor, runner, this.customData, this.timerService);
-			this.threadManagerThread = new Thread(threadManager, "Thread Manager for " + this.getWorkloadId());
-			this.threadManagerThread.setDaemon(true);
-			this.threadManagerThread.setPriority(Thread.MAX_PRIORITY);
-			this.threadManagerThread.start();
+		public double getPercentComplete() {
+			if (terminate.get()) {
+				return 100.0;
+			}
+			else if (target <= 0) {
+				return 0.0;
+			}
+			else {
+				return Math.min(100.0, completedCounter.get() * 100.0 / target);
+			}
 		}
 		
-		public int getDesiredRate() {
-			return this.threadManager.getDesiredRate();
-		}
-		
-		public void setDesiredRate(int desiredRate) {
-			this.threadManager.setDesiredRate(desiredRate);
+		public long getTimeRemainingEstimateInMs() {
+			long now = System.currentTimeMillis();
+			double percentComplete = getPercentComplete();
+			if (percentComplete >= 100.0) {
+				return 0L;
+			}
+			long elapsedTime = now - startTime;
+			return (long)((100.0*elapsedTime/percentComplete) - elapsedTime);
 		}
 	}
 	
 	@Override
 	public String getTypeName() {
-		return "THROUGHPUT";
+		return "FIXED_TARGET";
 	}
 
 	@Override

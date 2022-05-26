@@ -66,9 +66,13 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "	constraint topology_prikey PRIMARY KEY(id,idtype,parentid)\n"
 			+ ") split into 48 tablets;";
 	
+//	private static final String CREATE_TOPOLOGY_INDEX_old = 
+//			"Create unique index if not exists topology_idx2 "
+//			+ "on topology(parentid, idtype desc, id asc);";
+
 	private static final String CREATE_TOPOLOGY_INDEX_old = 
-			"Create unique index if not exists topology_idx2 "
-			+ "on topology(parentid, idtype desc, id asc);";
+	"Create unique index if not exists topology_idx2 "
+	+ "on topology(parentid, idtype desc, id asc) include (idname, children, depth);";
 
 	private static final String CREATE_TOPOLOGY_INDEX = 
 			"Create unique index if not exists topology_idx2 "
@@ -76,7 +80,13 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "(idname, children, depth) WHERE parentid::text <> 'null'::text "
 			+ "AND idtype::text = 'LOCATION_GROUP'::text;";
 
-	private static final String DROP_TOPOLOGY_TABLE = 
+    private static final String CREATE_TOPOLOGY_INDEX2 =
+            "Create unique index if not exists topology_idx3 "
+            + "on topology(parentid, idtype asc, id asc) include "
+            + "(idname, children, depth) WHERE parentid::text <> 'null'::text "
+            + "AND idtype::text = 'LOCATION'::text;";
+    
+    private static final String DROP_TOPOLOGY_TABLE = 
 			"drop table if exists topology cascade;";
 	
 	private static final String TRUNCATE_TOPOLOGY_TABLE = "truncate topology";
@@ -154,7 +164,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "	locs;";
 	
 	private static final String TOP_DOWN_QUERY = 
-			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_idx2) IndexScan(t1 topology_idx2) */"
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_idx2) IndexScan(t1 topology_idx3) */\n"
 			+ "	WITH RECURSIVE locs AS (\n"
 			+ "		    SELECT\n"
 			+ "		        id,idtype,idname,parentid,children,depth"
@@ -162,7 +172,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "		        topology\n"
 			+ "		    WHERE\n"
 			+ "		        id = ?"
-			+ "		        AND idtype IN ('USER', 'LOCATION_GROUP', 'LOCATION')\n"
+//			+ "		        AND idtype IN ('USER', 'LOCATION_GROUP', 'LOCATION')\n"
 			+ "		    UNION ALL\n"
 			+ "		        SELECT\n"
 			+ "		            t.id,\n"
@@ -184,7 +194,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> 'null';\n";
 
 	private static final String BOTTOM_UP_QUERY = 
-			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_prikey) */ WITH RECURSIVE locs AS ("
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_prikey) Set(transaction_read_only on)*/ WITH RECURSIVE locs AS ("
 			+ " SELECT"
 			+ "     id,idtype,idname,parentid,children,depth"
 			+ " FROM"
@@ -208,7 +218,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "        locs;";
 
 	private static final String READ_TOPOLOGY = 
-			"   SELECT"
+			"/*+ Set(transaction_read_only on) */"
+			+ "   SELECT"
 			+ "    id,idtype,idname,parentid,children,depth"
 			+ " FROM"
 			+ "    topology"
@@ -216,14 +227,14 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "    id = ?;";
 		
 	private static final String READ_ONLY_TRANSACTION = "START TRANSACTION READ ONLY;";
-	private static final String FOLLOWER_READS = "SET yb_read_from_followers = TRUE;";
+	private static final String FOLLOWER_READS = "SET yb_read_from_followers TO true;";
 	private static final String COMMIT = "commit;";
 	
 	private static final String BOTTOM_UP_FOLLOWER_READ = 
 			READ_ONLY_TRANSACTION + FOLLOWER_READS + BOTTOM_UP_QUERY + COMMIT;
 	
 	private static final String TOP_DOWN_FOLLOWER_READ = 
-			READ_ONLY_TRANSACTION + FOLLOWER_READS + TOP_DOWN_QUERY + COMMIT;
+			FOLLOWER_READS + TOP_DOWN_QUERY;
 	
 	private static final String READ_TOPOLOGY_FOLLOWER_READ = 
 			READ_ONLY_TRANSACTION + FOLLOWER_READS + READ_TOPOLOGY + COMMIT;
@@ -631,10 +642,10 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	}
 
 	private void runTopDownQuery(String uuid, boolean followerReads) {
-		String query = followerReads ? TOP_DOWN_FOLLOWER_READ : TOP_DOWN_QUERY;	
-		jdbcTemplate.query(TOP_DOWN_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
+//		String query = followerReads ? TOP_DOWN_FOLLOWER_READ : TOP_DOWN_QUERY;	
+		String query = TOP_DOWN_QUERY;
+		RowCallbackHandler handler = 					
 				new RowCallbackHandler() {
-					
 					@Override
 					public void processRow(ResultSet rs) throws SQLException {
 						if (LOGGER.isDebugEnabled()) {
@@ -648,7 +659,16 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 								rs.getInt("depth")));
 						}
 					}
-				});
+				};
+ 
+		
+		if (true) {
+			query = query.replace("?", "'" + uuid + "'");
+			jdbcTemplate.query(query,handler);
+		}
+		else {
+			jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR}, handler);
+		}
 	 }
 	
 	private void runTopDownQueryOld(String uuid, boolean followerReads) {
@@ -690,6 +710,69 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 					}
 				});
 		System.out.printf("Results for top down query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
+		
+		Connection connection = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			connection = DataSourceUtils.getConnection(jdbcTemplate.getDataSource());
+			ps = connection.prepareStatement("EXPLAIN " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
+			boolean results = ps.execute();
+			int rsCount = 0;
+	        // Loop through the available result sets.
+	        do {
+	            if (results) {
+	                rs = ps.getResultSet();
+	                rsCount++;
+
+	                // Show data from the result set.
+	                System.out.println("RESULT SET #" + rsCount);
+	                while (rs.next()) {
+	                    System.out.println(rs.getString(1));
+	                }
+	            }
+	            System.out.println();
+	            results = ps.getMoreResults();
+	        } while (results);
+
+//			connection = DataSourceUtils.getConnection(jdbcTemplate.getDataSource());
+	        ps.close();
+			ps = connection.prepareStatement("SET pg_hint_plan.enable_hint=ON;SET pg_hint_plan.debug_print=detailed;SET pg_hint_plan.message_level=debug;EXPLAIN " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
+//			ps = connection.prepareStatement("SET pg_hint_plan.message_level TO debug;EXPLAIN ANALYZE " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
+
+			results = ps.execute();
+			rsCount = 0;
+	        // Loop through the available result sets.
+	        do {
+	            if (results) {
+	                rs = ps.getResultSet();
+	                rsCount++;
+
+	                // Show data from the result set.
+	                System.out.println("RESULT SET #" + rsCount);
+	                while (rs.next()) {
+	                    System.out.println(rs.getString(1));
+	                }
+	            }
+	            else {
+	            	System.out.println("Update count = " + ps.getUpdateCount());
+	            }
+	            System.out.println();
+	            results = ps.getMoreResults();
+	        } while (results);
+		}
+		catch (Exception e) {
+			System.out.println("Explain terminated by exception " + e.getClass() + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				rs.close();
+				ps.close();
+				DataSourceUtils.releaseConnection(connection, jdbcTemplate.getDataSource());
+			}
+			catch (Exception e) {};
+		}
 	 }
 
 
@@ -715,9 +798,11 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	
 
 	private void runBottomUpQuery(String uuid, boolean followerReads) {
-		String query = followerReads ? BOTTOM_UP_FOLLOWER_READ : BOTTOM_UP_QUERY;
+		// String query = followerReads ? BOTTOM_UP_FOLLOWER_READ : BOTTOM_UP_QUERY;
+		String query = BOTTOM_UP_QUERY.replace("?", "'" + uuid + "'");
 		
-		jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR},
+		// jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR},
+		jdbcTemplate.query(query,
 				new RowCallbackHandler() {
 					
 					@Override
@@ -780,7 +865,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				jdbcTemplate.execute(CREATE_MHHMAP_TABLE);
 				break;
 			case CREATE_TOPOLOGY_STEP:
-				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + (oldIndex ? CREATE_TOPOLOGY_INDEX_old : CREATE_TOPOLOGY_INDEX));
+				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + (oldIndex ? CREATE_TOPOLOGY_INDEX_old : (CREATE_TOPOLOGY_INDEX + CREATE_TOPOLOGY_INDEX2)));
 				break;
 			}
 		});

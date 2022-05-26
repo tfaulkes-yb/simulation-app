@@ -46,9 +46,6 @@
           </p-accordionTab>
         </ng-container>
       </p-accordion>
-      <div class="status mt-3" style="color: blue">
-        {{status}}
-      </div>
     
     </p-tabPanel>
     <p-tabPanel header="Active Workloads" leftIcon="fa-solid fa-table">
@@ -169,7 +166,10 @@
   </p-tabView>
 
   <ng-template pTemplate="footer">
-    <p-button icon="pi pi-check" (click)="closeDialog()" label="Close"></p-button>
+    <div class="status mt-3" style="color: blue; text-align: left; display: inline-block; width: 80%">
+      {{status}}
+    </div>
+  <p-button icon="pi pi-check" (click)="closeDialog()" label="Close"></p-button>
   </ng-template>
 </p-dialog>
 

@@ -219,7 +219,7 @@ export class ThroughputComponent implements OnInit, AfterViewInit, OnChanges {
       .attr('font-size', '1em')
       .attr('x', -this.margins.top-160)
       .attr('y', -this.margins.left+65)
-      .text(this.timingType == 'LATENCY' ? 'Time (ms)' : 'Count');
+      .text(this.timingType == 'LATENCY' ? 'Latency (ms)' : 'Count');
   }
 
   private defineAxes() {

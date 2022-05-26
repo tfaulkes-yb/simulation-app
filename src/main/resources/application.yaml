@@ -8,6 +8,7 @@ spring:
 #      username: ${user:yugabyte}
       username: yugabyte
       password: ${password:yugabyte}
+      connection-init-sql: 'set yb_read_from_followers to true;'
       maximumPoolSize: ${max-pool-size:100}
       maxLifeTime: ${max-life-time:3600000}
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
