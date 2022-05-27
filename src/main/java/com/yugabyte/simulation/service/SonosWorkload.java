@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
@@ -53,11 +54,13 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	@Autowired 
 	private WorkloadManager workloadManager;
 	
+	private static final UUID NULL_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 	private static final String CREATE_TOPOLOGY_TABLE = 
 			"create table if not exists topology (\n"
-			+ "	parentid varchar(100),\n"
-			+ "	Id varchar(100),\n"
-			+ "	IdType varchar(100) not null,\n"
+			+ "	parentid uuid,\n"
+			+ "	Id uuid,\n"
+			+ " UserId uuid,\n"
+			+ "	IdType varchar(20) not null,\n"
 			+ "	IdName varchar(100),\n"
 			+ " children int,\n"
 			+ " depth int,\n"
@@ -66,10 +69,6 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "	constraint topology_prikey PRIMARY KEY(id,idtype,parentid)\n"
 			+ ") split into 48 tablets;";
 	
-	private static final String CREATE_TOPOLOGY_INDEX_old = 
-			"Create unique index if not exists topology_idx2 "
-			+ "on topology(parentid, idtype desc, id asc) include (idname, children, depth);";
-
 	private static final String CREATE_TOPOLOGY_INDEX = 
 			"Create unique index if not exists topology_idx2 "
 			+ "on topology(parentid, idtype asc, id asc) include "
@@ -82,6 +81,11 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
             + "(idname, children, depth) WHERE parentid::text <> 'null'::text "
             + "AND idtype::text = 'LOCATION'::text;";
     
+    private static final String CREATE_TOPOLOGY_USER_INDEX = 
+			"Create unique index if not exists topology_user_idx "
+			+ "on topology(userid, id asc) include "
+			+ "(idname, parentid, id, idtype, children, depth);";
+    
     private static final String DROP_TOPOLOGY_TABLE = 
 			"drop table if exists topology cascade;";
 	
@@ -89,11 +93,11 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			
 	private static final String CREATE_MHHMAP_TABLE = 
 			"create table if not exists mhhmap (\n"
-			+ "	sonosId varchar(100),\n"
+			+ "	sonosId uuid,\n"
 			+ "	mHHId varchar(100),\n"
-			+ "	locId varchar(100),\n"
-			+ "	status varchar(100),\n"
-			+ "	splitReason varchar(100),\n"
+			+ "	locId uuid,\n"
+			+ "	status varchar(20),\n"
+			+ "	splitReason varchar(20),\n"
 			+ "	created timestamp without time zone default now(),\n"
 			+ "        updated timestamp without time zone default now(),\n"
 			+ "	constraint mhhmap_prikey PRIMARY KEY(locId,mHHId,sonosId)\n"
@@ -105,6 +109,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 
 	private static final String INSERT_TOPOLOGY_TABLE = 
 			"insert into topology("
+			+ "userid,"
 			+ "parentid,"
 			+ "Id,"
 			+ "IdType,"
@@ -112,6 +117,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "children,"
 			+ "depth)"
 			+ "values ("
+			+ "?,"
 			+ "?,"
 			+ "?,"
 			+ "?,"
@@ -136,30 +142,6 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ ");";
 	
 	private static final String TOP_DOWN_QUERY_old = 
-			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_idx2) */ WITH RECURSIVE locs AS ("
-			+ "	SELECT"
-			+ "		id,idtype,idname,parentid,children,depth"
-			+ "	FROM"
-			+ "		topology"
-			+ "	WHERE"
-			+ "		id = ?"
-			+ "	UNION ALL"
-			+ "		SELECT"
-			+ "			t.id,"
-			+ "			t.idtype,"
-			+ "			t.idname,"
-			+ "			t.parentid,"
-			+ "			t.children,"
-			+ "			t.depth"
-			+ "		FROM"
-			+ "			 topology t"
-			+ "		INNER JOIN locs l ON l.id = t.parentid"
-			+ ") SELECT"
-			+ "	id,idtype,idname,parentid,children,depth "
-			+ " FROM "
-			+ "	locs;";
-	
-	private static final String TOP_DOWN_QUERY = 
 			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_idx2) IndexScan(t1 topology_idx3) */\n"
 			+ "	WITH RECURSIVE locs AS (\n"
 			+ "		    SELECT\n"
@@ -189,6 +171,11 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth\n"
 			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> 'null';\n";
 
+	private static final String TOP_DOWN_QUERY = 
+			"/*+ Set(transaction_read_only on) IndexScan(t topology_user_idx) */\n"
+			+ "select id,idtype,idname,parentid,children,depth from topology t "
+			+ "where userid = ?::uuid;";
+			
 	private static final String BOTTOM_UP_QUERY = 
 			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) IndexScan(t topology_prikey) Set(transaction_read_only on)*/ WITH RECURSIVE locs AS ("
 			+ " SELECT"
@@ -196,7 +183,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ " FROM"
 			+ "     topology"
 			+ " WHERE"
-			+ "     id = ?"
+			+ "     id = ?::uuid"
 			+ " UNION ALL"
 			+ "     SELECT"
 			+ "         t.id,"
@@ -220,7 +207,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ " FROM"
 			+ "    topology"
 			+ " WHERE"
-			+ "    id = ?;";
+			+ "    id = ?::uuid;";
 		
 	private static final String READ_ONLY_TRANSACTION = "START TRANSACTION READ ONLY;";
 	private static final String FOLLOWER_READS = "SET yb_read_from_followers TO true;";
@@ -339,8 +326,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			WorkloadType.CREATE_TABLES.toString(),
 			"Create Tables", 
 			"Create the simulation tables. If the tables are already created they will not be re-created unless 'force' is set to true",
-			new WorkloadParamDesc("force", false, false),
-			new WorkloadParamDesc("old index", false, false)
+			new WorkloadParamDesc("force", false, false)
 		);
 	
 	private WorkloadDesc loadDataWorkload =  new WorkloadDesc(
@@ -428,7 +414,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			switch (type) {
 			case CREATE_TABLES:
 				timerService.setCurrentWorkload(createTablesWorkload);
-				this.createTables(values[0].getBoolValue(), values[1].getBoolValue());
+				this.createTables(values[0].getBoolValue());
 				timerService.removeCurrentWorkload(createTablesWorkload);
 				return new InvocationResult("Ok");
 			
@@ -452,11 +438,11 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				return new InvocationResult("Ok");
 
 			case RUN_TOP_DOWN_QUERY:
-				this.runTopDownQuerySingle(values[0].getStringValue(), false);
+				this.runTopDownQuerySingle(UUID.fromString(values[0].getStringValue()), false);
 				return new InvocationResult("Ok");
 				
 			case RUN_BOTTOM_UP_QUERY:
-				this.runBottomUpQuerySingle(values[0].getStringValue(), false);
+				this.runBottomUpQuerySingle(UUID.fromString(values[0].getStringValue()), false);
 				return new InvocationResult("Ok");
 				
 			}
@@ -467,7 +453,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 	}
 	
-	private void runTopDownQuery(String uuid, boolean followerReads) {
+	private void runTopDownQuery(UUID uuid, boolean followerReads) {
 //		String query = followerReads ? TOP_DOWN_FOLLOWER_READ : TOP_DOWN_QUERY;	
 		String query = TOP_DOWN_QUERY;
 		RowCallbackHandler handler = 					
@@ -489,7 +475,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
  
 		
 		if (followerReads) {
-			query = query.replace("?", "'" + uuid + "'");
+			query = query.replace("?", uuid.toString());
 			jdbcTemplate.query(query,handler);
 		}
 		else {
@@ -497,25 +483,25 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 	 }
 	
-	private void runTopDownQuerySingle(String uuid, boolean followerReads) {
+	private void runTopDownQuerySingle(UUID uuid, boolean followerReads) {
 		long now = System.nanoTime();
 //		jdbcTemplate.query(TOP_DOWN_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
-		jdbcTemplate.query(TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"),
+		jdbcTemplate.query(TOP_DOWN_QUERY.replace("?", "'" + uuid.toString() + "'"),
 				new RowCallbackHandler() {
 					
 					@Override
 					public void processRow(ResultSet rs) throws SQLException {
-//						System.out.printf(
-//							"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
-//							rs.getString("id"),
-//							rs.getString("idtype"),
-//							rs.getString("idname"),
-//							rs.getString("parentid"),
-//							rs.getInt("children"),
-//							rs.getInt("depth"));
+						System.out.printf(
+							"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+							rs.getString("id"),
+							rs.getString("idtype"),
+							rs.getString("idname"),
+							rs.getString("parentid"),
+							rs.getInt("children"),
+							rs.getInt("depth"));
 					}
 				});
-		System.out.printf("Results for top down query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
+		System.out.printf("Results for top down query from %s fetched in %fms\n", uuid.toString(), (System.nanoTime() - now) / 1_000_000.0);
 
 		now = System.nanoTime();
 		jdbcTemplate.query("Select id, idtype, idname, parentid, children, depth from topology t where "
@@ -534,7 +520,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 //							rs.getInt("depth"));
 					}
 				});
-		System.out.printf("Results for top down FIXED query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
+		System.out.printf("Results for top down FIXED query from %s fetched in %fms\n", uuid.toString(), (System.nanoTime() - now) / 1_000_000.0);
 		
 
 		Connection connection = null;
@@ -543,7 +529,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		try {
 			connection = DataSourceUtils.getConnection(jdbcTemplate.getDataSource());
 //			ps = connection.prepareStatement("SET pg_hint_plan.enable_hint=ON;SET pg_hint_plan.debug_print=detailed;SET pg_hint_plan.message_level=debug;EXPLAIN " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
-			ps = connection.prepareStatement("SET pg_hint_plan.message_level TO debug;EXPLAIN ANALYZE " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
+			ps = connection.prepareStatement("SET pg_hint_plan.message_level TO debug;EXPLAIN ANALYZE " + TOP_DOWN_QUERY.replace("?", "'" + uuid.toString() + "'"));
 
 			boolean results = ps.execute();
 			int rsCount = 0;
@@ -581,7 +567,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	 }
 
 
-	private void runBottomUpQuerySingle(String uuid, boolean followerReads) {
+	private void runBottomUpQuerySingle(UUID uuid, boolean followerReads) {
 		long now = System.nanoTime();
 		jdbcTemplate.query(BOTTOM_UP_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
 				new RowCallbackHandler() {
@@ -590,19 +576,19 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 					public void processRow(ResultSet rs) throws SQLException {
 						System.out.printf(
 									"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
-								rs.getString("id"),
+								((UUID)rs.getObject("id")).toString(),
 								rs.getString("idtype"),
 								rs.getString("idname"),
-								rs.getString("parentid"),
+								((UUID)rs.getObject("parentid")).toString(),
 								rs.getInt("children"),
 								rs.getInt("depth"));
 					}
 				});
-		System.out.printf("Results for bottom up query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
+		System.out.printf("Results for bottom up query from %s fetched in %fms\n", uuid.toString(), (System.nanoTime() - now) / 1_000_000.0);
 	 }
 	
 
-	private void runBottomUpQuery(String uuid, boolean followerReads) {
+	private void runBottomUpQuery(UUID uuid, boolean followerReads) {
 		// String query = followerReads ? BOTTOM_UP_FOLLOWER_READ : BOTTOM_UP_QUERY;
 //		String query = BOTTOM_UP_QUERY.replace("?", "'" + uuid + "'");
 
@@ -625,19 +611,19 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			};
  
 		if (followerReads) {
-			String query = BOTTOM_UP_QUERY.replace("?", "'" + uuid + "'");
+			String query = BOTTOM_UP_QUERY.replace("?", uuid.toString());
 			jdbcTemplate.query(query,handler);
 		}
 		else {
 			String query = BOTTOM_UP_QUERY;
-			jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR}, handler);
+			jdbcTemplate.query(query, new Object[] {UUID.fromString(uuid.toString())}, new int[] {Types.VARCHAR}, handler);
 		}
 	 }
 	
-	private void runPointRead(String uuid, boolean followerReads) {
+	private void runPointRead(UUID uuid, boolean followerReads) {
 
 		if (followerReads) {
-			String query = READ_TOPOLOGY_FOLLOWER_READ.replace("?", "'" + uuid + "'");
+			String query = READ_TOPOLOGY_FOLLOWER_READ.replace("?", uuid.toString());
 			jdbcTemplate.execute(query);
 		}
 		else {
@@ -662,7 +648,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 	}
 	
-	private void createTables(boolean force, boolean oldIndex) {
+	private void createTables(boolean force) {
 		FixedStepsWorkloadType jobType = force ? createTablesWithTruncateWorkloadType : createTablesWorkloadType;
 		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
 		workloadManager.registerWorkloadInstance(workload);
@@ -678,7 +664,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				jdbcTemplate.execute(CREATE_MHHMAP_TABLE);
 				break;
 			case CREATE_TOPOLOGY_STEP:
-				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + (oldIndex ? CREATE_TOPOLOGY_INDEX_old : (CREATE_TOPOLOGY_INDEX + CREATE_TOPOLOGY_INDEX2)));
+				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + CREATE_TOPOLOGY_INDEX + CREATE_TOPOLOGY_INDEX2 + CREATE_TOPOLOGY_USER_INDEX);
 				break;
 			}
 		});
@@ -704,12 +690,12 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 	}
 	
-	private String generateUUID() {
-		return LoadGeneratorUtils.getUUID().toString();
+	private UUID generateUUID() {
+		return LoadGeneratorUtils.getUUID();
 	}
 	
-	private String generateMhhMap(String userId, String locId) {
-		String sonosId = userId;
+	private UUID generateMhhMap(UUID userId, UUID locId) {
+		UUID sonosId = userId;
 		String mhhid = "Sonos_" + LoadGeneratorUtils.getUUID().toString() + "." 
 				+ LoadGeneratorUtils.getFixedLengthNumber(10);
 		String status = "ACTIVE";
@@ -730,14 +716,14 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	 * @param type 
 	 * @return the id for this generated topology
 	 */
-	private String generateTopology(String thisId, String parentId, IdType type, int children, int depth) {
+	private UUID generateTopology(UUID userId, UUID thisId, UUID parentId, IdType type, int children, int depth) {
 		// If there is no parent, it has to be the user level
 		if (parentId == null) {
 			type = IdType.USER;
 		}
 		String idName = LoadGeneratorUtils.getName() + " " + LoadGeneratorUtils.getName();
 		
-		Object[] data = new Object[] {parentId == null? "null" : parentId, thisId, type.toString(), idName, children, depth};
+		Object[] data = new Object[] {userId, parentId == null? NULL_UUID : parentId, thisId, type.toString(), idName, children, depth};
 		logCall("generateTopology", data);
 
 		Timer timer = timerService.getTimer(TimerType.WORKLOAD1).start();
@@ -746,7 +732,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		return thisId;
 	}
 	
-	private int generateChildrenForHierarchyLevel(String userId, String parentId, 
+	private int generateChildrenForHierarchyLevel(UUID userId, UUID parentId, 
 			int currentDepth, int maxPlayers, double 
 			maxItemsPerLayerInHeirarchy, MutableInteger generatedMhhMaps, boolean fixedSizeData) {
 		
@@ -754,10 +740,10 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		int childrenAtThisLayer = fixedSizeData ? (currentDepth == 4 ? 6 : 4) : 1+random.nextInt((int)Math.ceil(maxItemsPerLayerInHeirarchy));
 		int childrenCount = 0;
 		for (int i = 0; i < childrenAtThisLayer; i++) {
-			String thisChildId = generateUUID();
+			UUID thisChildId = generateUUID();
 			if (currentDepth == 1) {
 				// Generate the location
-				String locationId = generateTopology(generateUUID(), parentId, IdType.LOCATION, 0, 1);
+				UUID locationId = generateTopology(userId, generateUUID(), parentId, IdType.LOCATION, 0, 1);
 				
 				// After discussions with Sonos, there is typically 1 MhhMap per location.
 				generateMhhMap(userId, locationId);
@@ -766,14 +752,14 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			}
 			else {
 				int thisChildCount = this.generateChildrenForHierarchyLevel(userId, thisChildId, currentDepth-1, maxPlayers, maxItemsPerLayerInHeirarchy, generatedMhhMaps, fixedSizeData);
-				generateTopology(thisChildId, parentId, IdType.LOCATION_GROUP, thisChildCount, currentDepth);
+				generateTopology(userId, thisChildId, parentId, IdType.LOCATION_GROUP, thisChildCount, currentDepth);
 				childrenCount += thisChildCount;
 			}
 		}
 		return childrenCount;
 	}
 	
-	private String generateHierarchy(int depth, int maxMhhMaps, MutableInteger generatedMhhMaps, boolean fixedSizeData) {
+	private UUID generateHierarchy(int depth, int maxMhhMaps, MutableInteger generatedMhhMaps, boolean fixedSizeData) {
 		if (depth < 2) {
 			throw new IllegalArgumentException("Heirarchy depth must be at least 2 (USER and LOCATION)");
 		}
@@ -782,12 +768,12 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 		int remainingMhhMaps = maxMhhMaps - generatedMhhMaps.get();
 		if (remainingMhhMaps <= 0) {
-			return "";
+			return null;
 		}
 		int intermediateLayers = depth - 2;
 
 		// Generate the user
-		String userId = generateUUID();
+		UUID userId = generateUUID();
 
 		// Average number of players per location
 		double approxMaxLocations = remainingMhhMaps / AVG_MHHMAP_PER_LOCATION;
@@ -800,7 +786,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		
 		int childrenAtDepth = generateChildrenForHierarchyLevel(userId, userId, depth-1, remainingMhhMaps, itemsPerLayerInHeirarchy, generatedMhhMaps, fixedSizeData);
 
-		generateTopology(userId, null, IdType.USER, childrenAtDepth, depth);
+		generateTopology(userId, userId, null, IdType.USER, childrenAtDepth, depth);
 		return userId;
 	}
 	
@@ -812,13 +798,13 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 		// If we're generating fixed size data, generate a special parent with 1500 children
 		if (fixedSizeData) {
-			String parentId = "00000000-0000-0000-0000-000000000000";
+			UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000000");
 			for (int i = 0; i < 1500; i++) {
-				String locationId = generateTopology(generateUUID(), parentId, IdType.LOCATION, 0, 1);
-				generateMhhMap(parentId, locationId);
+				UUID locationId = generateTopology(userId, generateUUID(), userId, IdType.LOCATION, 0, 1);
+				generateMhhMap(userId, locationId);
 
 			}
-			generateTopology(parentId, null, IdType.USER, 1500, 2);
+			generateTopology(userId, userId, null, IdType.USER, 1500, 2);
 		}
 		ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 		AtomicInteger counter = new AtomicInteger();
@@ -879,20 +865,22 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	}
 	
 	private void performBackfillWrite() {
-		String userUuid = generateUUID();
-		String locationUuid = generateUUID();
+		UUID userUuid = generateUUID();
+		UUID locationUuid = generateUUID();
 
 		String mhhid = "Sonos_" + LoadGeneratorUtils.getUUID().toString() + "." 
 				+ LoadGeneratorUtils.getFixedLengthNumber(10);
 
 		jdbcTemplate.update(BACKFILL_TRANSACTION, new Object[] {
-				"null",
+				userUuid,
+				NULL_UUID,
 				userUuid,
 				IdType.USER.toString(),
 				LoadGeneratorUtils.getName() + " " + LoadGeneratorUtils.getName(),
 				1,
 				2,
 				
+				userUuid,
 				userUuid,
 				locationUuid,
 				IdType.LOCATION.toString(),
@@ -909,42 +897,42 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	}
 	
 	
-	private List<String> getRandomTopologyList() {
-		List<String> results = new ArrayList<String>(ROWS_TO_PRELOAD);
+	private List<UUID> getRandomTopologyList() {
+		List<UUID> results = new ArrayList<UUID>(ROWS_TO_PRELOAD);
 		jdbcTemplate.query("select id from topology limit " + ROWS_TO_PRELOAD,
 			new RowCallbackHandler() {
 			
 				@Override
 				public void processRow(ResultSet rs) throws SQLException {
-					String value = rs.getString(1);
+					UUID value = (UUID)rs.getObject(1);
 					results.add(value);
 				}
 		});
 		return results;
 	}
 	
-	private List<String> getUserList(String inClause) {
-		List<String> results = new ArrayList<String>(ROWS_TO_PRELOAD);
-		jdbcTemplate.query("select id from topology where parentid = 'null' " + inClause + " limit " + ROWS_TO_PRELOAD,
+	private List<UUID> getUserList(String inClause) {
+		List<UUID> results = new ArrayList<UUID>(ROWS_TO_PRELOAD);
+		jdbcTemplate.query("select id from topology where idtype = 'USER' " + inClause + " limit " + ROWS_TO_PRELOAD,
 			new RowCallbackHandler() {
 			
 				@Override
 				public void processRow(ResultSet rs) throws SQLException {
-					String value = rs.getString(1);
+					UUID value = (UUID)rs.getObject(1);
 					results.add(value);
 				}
 		});
 		return results;
 	}
 	
-	private List<String> getLocationList() {
-		List<String> results = new ArrayList<String>(ROWS_TO_PRELOAD);
+	private List<UUID> getLocationList() {
+		List<UUID> results = new ArrayList<UUID>(ROWS_TO_PRELOAD);
 		jdbcTemplate.query("select id from topology where idtype = 'LOCATION' limit " + ROWS_TO_PRELOAD,
 			new RowCallbackHandler() {
 			
 				@Override
 				public void processRow(ResultSet rs) throws SQLException {
-					String value = rs.getString(1);
+					UUID value = (UUID)rs.getObject(1);
 					results.add(value);
 				}
 		});
@@ -962,9 +950,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			final int maxThreads) {
 		
 		System.out.println("**** Preloading data...");
-		final List<String> users = getUserList(inClause);
-		final List<String> locations = getLocationList();
-		final List<String> topology = getRandomTopologyList();
+		final List<UUID> users = getUserList(inClause);
+		final List<UUID> locations = getLocationList();
+		final List<UUID> topology = getRandomTopologyList();
 		System.out.println("**** Preload of data done");
 		
 		final int totalCount = percentageBackfills + percentageTopDownReads + percentageBottomUpReads + percentagePointReads; 
