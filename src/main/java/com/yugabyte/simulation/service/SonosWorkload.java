@@ -474,16 +474,16 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				new RowCallbackHandler() {
 					@Override
 					public void processRow(ResultSet rs) throws SQLException {
-						if (LOGGER.isDebugEnabled()) {
-							LOGGER.debug(String.format(
-								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
-								rs.getString("id"),
-								rs.getString("idtype"),
-								rs.getString("idname"),
-								rs.getString("parentid"),
-								rs.getInt("children"),
-								rs.getInt("depth")));
-						}
+//						if (LOGGER.isDebugEnabled()) {
+//							LOGGER.debug(String.format(
+//								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+//								rs.getString("id"),
+//								rs.getString("idtype"),
+//								rs.getString("idname"),
+//								rs.getString("parentid"),
+//								rs.getInt("children"),
+//								rs.getInt("depth")));
+//						}
 					}
 				};
  
@@ -499,30 +499,51 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	
 	private void runTopDownQuerySingle(String uuid, boolean followerReads) {
 		long now = System.nanoTime();
-		jdbcTemplate.query(TOP_DOWN_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
+//		jdbcTemplate.query(TOP_DOWN_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
+		jdbcTemplate.query(TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"),
 				new RowCallbackHandler() {
 					
 					@Override
 					public void processRow(ResultSet rs) throws SQLException {
-						System.out.printf(
-							"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
-							rs.getString("id"),
-							rs.getString("idtype"),
-							rs.getString("idname"),
-							rs.getString("parentid"),
-							rs.getInt("children"),
-							rs.getInt("depth"));
+//						System.out.printf(
+//							"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+//							rs.getString("id"),
+//							rs.getString("idtype"),
+//							rs.getString("idname"),
+//							rs.getString("parentid"),
+//							rs.getInt("children"),
+//							rs.getInt("depth"));
 					}
 				});
 		System.out.printf("Results for top down query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
+
+		now = System.nanoTime();
+		jdbcTemplate.query("Select id, idtype, idname, parentid, children, depth from topology t where "
+				+ "parentid = '00000000-0000-0000-0000-000000000000' and idtype = 'LOCATION'",
+				new RowCallbackHandler() {
+					
+					@Override
+					public void processRow(ResultSet rs) throws SQLException {
+//						System.out.printf(
+//							"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+//							rs.getString("id"),
+//							rs.getString("idtype"),
+//							rs.getString("idname"),
+//							rs.getString("parentid"),
+//							rs.getInt("children"),
+//							rs.getInt("depth"));
+					}
+				});
+		System.out.printf("Results for top down FIXED query from %s fetched in %fms\n", uuid, (System.nanoTime() - now) / 1_000_000.0);
 		
+
 		Connection connection = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			connection = DataSourceUtils.getConnection(jdbcTemplate.getDataSource());
-			ps = connection.prepareStatement("SET pg_hint_plan.enable_hint=ON;SET pg_hint_plan.debug_print=detailed;SET pg_hint_plan.message_level=debug;EXPLAIN " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
-//			ps = connection.prepareStatement("SET pg_hint_plan.message_level TO debug;EXPLAIN ANALYZE " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
+//			ps = connection.prepareStatement("SET pg_hint_plan.enable_hint=ON;SET pg_hint_plan.debug_print=detailed;SET pg_hint_plan.message_level=debug;EXPLAIN " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
+			ps = connection.prepareStatement("SET pg_hint_plan.message_level TO debug;EXPLAIN ANALYZE " + TOP_DOWN_QUERY.replace("?", "'"+uuid+"'"));
 
 			boolean results = ps.execute();
 			int rsCount = 0;
@@ -788,6 +809,16 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			jdbcTemplate.execute(TRUNCATE_MHHMAP_TABLE);
 			jdbcTemplate.execute(TRUNCATE_TOPOLOGY_TABLE);
 
+		}
+		// If we're generating fixed size data, generate a special parent with 1500 children
+		if (fixedSizeData) {
+			String parentId = "00000000-0000-0000-0000-000000000000";
+			for (int i = 0; i < 1500; i++) {
+				String locationId = generateTopology(generateUUID(), parentId, IdType.LOCATION, 0, 1);
+				generateMhhMap(parentId, locationId);
+
+			}
+			generateTopology(parentId, null, IdType.USER, 1500, 2);
 		}
 		ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 		AtomicInteger counter = new AtomicInteger();
