@@ -38,6 +38,7 @@ public class YBServerInfoController {
     }
     
     @GetMapping("/api/ybserverinfoSample")
+//    @GetMapping("/api/ybserverinfo")
     public List<YBServerModel> getYBServerInfoSample(){
     	List<YBServerModel> list = new ArrayList<YBServerModel>();
     	YBServerModel model = new YBServerModel();

@@ -61,13 +61,13 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		public void run() {
 			while (!terminate.get() && startedCounter.incrementAndGet() < target) {
 				timer.start();
-				long timeInNs;
 				try {
 					this.threadData = task.run(customData, threadData);
-					timeInNs = timer.end(ExecutionStatus.SUCCESS);
+					timer.end(ExecutionStatus.SUCCESS);
 				}
 				catch (Exception e) {
-					timeInNs = timer.end(ExecutionStatus.ERROR);
+					timer.end(ExecutionStatus.ERROR);
+					// TODO Log exception?
 				}
 				this.completedCounter.incrementAndGet();
 			}
