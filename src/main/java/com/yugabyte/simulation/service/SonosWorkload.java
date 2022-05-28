@@ -798,7 +798,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 		// If we're generating fixed size data, generate a special parent with 1500 children
 		if (fixedSizeData) {
-			UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000000");
+			UUID userId = UUID.fromString("00000000-0000-0000-0000-111111111111");
 			for (int i = 0; i < 1500; i++) {
 				UUID locationId = generateTopology(userId, generateUUID(), userId, IdType.LOCATION, 0, 1);
 				generateMhhMap(userId, locationId);
