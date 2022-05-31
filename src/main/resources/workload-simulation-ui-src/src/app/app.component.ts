@@ -254,7 +254,7 @@ export class AppComponent {
 
   @HostListener('wheel', ['$event'])
   onMouseWheel(event : any) {
-    if (event.srcElement.closest('p-dialog') == null) {
+    if ((event.srcElement.closest('p-dialog') == null)  && (event.srcElement.closest('figure') != null) || event.shiftKey) {
       event.preventDefault();
       let amount = event.wheelDelta;
       let change = 1+(amount/1200);

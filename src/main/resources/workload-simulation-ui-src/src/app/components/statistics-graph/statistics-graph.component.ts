@@ -6,11 +6,11 @@ import { TimingPoint } from '../../model/timing-point.model';
 
 enum LineType { MIN = 0, AVG = 1, MAX = 2 };
 @Component({
-  selector: 'app-throughput',
-  templateUrl: './throughput.component.html',
-  styleUrls: ['./throughput.component.css']
+  selector: 'app-statistics-graph',
+  templateUrl: './statistics-graph.component.html',
+  styleUrls: ['./statistics-graph.component.css']
 })
-export class ThroughputComponent implements OnInit, AfterViewInit, OnChanges {
+export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChanges {
   private data : TimingPoint[] = [];
   private svg : any;
   private margin = 50;
@@ -42,7 +42,7 @@ export class ThroughputComponent implements OnInit, AfterViewInit, OnChanges {
   @Input()
   duration = 3 * 60 * 1000;
 
-  @ViewChild('throughput')
+  @ViewChild('graph')
   throughput! : ElementRef;
 
   @Input()
@@ -131,7 +131,10 @@ export class ThroughputComponent implements OnInit, AfterViewInit, OnChanges {
         .attr('width', boxWidth)
         .attr('height', boxHeight)
         // .attr('transform', 'translate(10,10)')
-        .attr('transform', 'translate(' +(this.width-260) + ',0)')
+        .attr('transform', 'translate(' +(this.width-260) + ',0)');
+    if (this.width < 600) {
+      xLabel.attr('visibility', 'hidden');
+    }
     let box = xLabel.append('rect')
         .attr('x', 0)
         .attr('y', 1)

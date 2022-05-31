@@ -72,3 +72,35 @@ update topo2 set childlist = childlist ||'{3}' where id = '';
 		  UNION ALL
 		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth
 		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> 'null';
+		  
+		  
+/* Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_user_idx2) IndexScan(t1 topology_user_idx2) */
+ 	WITH RECURSIVE locs AS (
+ 		    SELECT
+ 		        id,idtype,idname,parentid,children,depth,userId
+ 		    FROM
+ 		        topology
+ 		    WHERE
+ 		        id = 'b30cc2f9-8900-4399-86cd-080cccbb0972'
+ 		    UNION ALL
+ 		        SELECT
+ 		            t.id,
+ 		            t.idtype,
+ 		            t.idname,
+ 		            t.parentid,
+ 		            t.children,
+ 		            t.depth,
+                  t.userId
+ 		        FROM
+ 		                topology t
+ 		        INNER JOIN locs l ON t.parentid = l.id and t.userId = l.userId
+ 		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000'
+ 		) SELECT
+ 		    id,idtype,idname,parentid,children,depth,userId
+ 		    FROM
+ 		    locs l
+ 		  UNION ALL
+ 		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth, t1.userId
+ 		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id and t1.userId = l.userId WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000';;
+
+/* Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_user_idx2) IndexScan(t1 topology_user_idx2) */ WITH RECURSIVE locs AS ( SELECT id,idtype,idname,parentid,children,depth,userId FROM topology WHERE id = 'b30cc2f9-8900-4399-86cd-080cccbb0972'  UNION ALL SELECT t.id, t.idtype, t.idname, t.parentid, t.children, t.depth, t.userId FROM topology t INNER JOIN locs l ON t.parentid = l.id and t.userId = l.userId WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000') SELECT id,idtype,idname,parentid,children,depth,userId FROM locs l UNION ALL SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth, t1.userId FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id and t1.userId = l.userId WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000';;

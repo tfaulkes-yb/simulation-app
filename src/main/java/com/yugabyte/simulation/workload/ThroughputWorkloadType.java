@@ -213,6 +213,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private final AtomicInteger transactionCounter;
 		private final CallbackHandler initializationHandler;
 		private final CallbackHandler terminationHandler;
+	    private static final Logger LOGGER = LoggerFactory.getLogger(ThroughputWorkloadType.class);
 		
 		public WorkerThread(AtomicInteger threadDelay, AtomicLong idleTimeCounter, AtomicInteger transactionCounter, AtomicBoolean terminate, ExecuteTask task, Object customData, TimerService timerService, CallbackHandler initializationHandler, CallbackHandler terminationHandler, Object threadData) {
 			this.threadDelay = threadDelay;
@@ -244,6 +245,8 @@ public class ThroughputWorkloadType extends WorkloadType {
 				this.initializationHandler.invoke(customData, threadData);
 			}
 			try {
+				long lastError = 0;
+				int skippedErrors = 0;
 				sleep(ThreadLocalRandom.current().nextInt(threadDelay.get()));
 				while (!terminate.get()) {
 					timer.start();
@@ -254,6 +257,21 @@ public class ThroughputWorkloadType extends WorkloadType {
 					}
 					catch (Exception e) {
 						timeInNs = timer.end(ExecutionStatus.ERROR);
+						long now = System.currentTimeMillis();
+						if (LOGGER.isDebugEnabled()) {
+							LOGGER.debug("Exception thrown executing task " + task.getClass().getName(), e);
+						}
+						else if (LOGGER.isInfoEnabled() && now-lastError > 2000) {
+							if (skippedErrors > 0) {
+								LOGGER.info("Skipped "+skippedErrors+ " other errors");
+							}
+							LOGGER.info("Exception thrown executing task " + task.getClass().getName(), e);
+							lastError = now;
+							skippedErrors = 0;
+						}
+						else {
+							skippedErrors++;
+						}
 					}
 					this.transactionCounter.incrementAndGet();
 					int idleTime = threadDelay.get() - (int)(timeInNs / 1000000);

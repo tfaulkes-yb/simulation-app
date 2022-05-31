@@ -4,6 +4,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { AppComponent } from './app.component';
 import { ThroughputComponent } from './components/throughput/throughput.component';
+import { StatisticsGraphComponent } from './components/statistics-graph/statistics-graph.component';
 import { HttpClientModule } from '@angular/common/http';
 import { NetworkDiagramComponent } from './components/network-diagram/network-diagram.component';
 import { AccordionModule } from 'primeng/accordion';
@@ -12,6 +13,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { InputTextModule } from 'primeng/inputtext';
+import { PanelModule } from 'primeng/panel';
 import { SliderModule} from 'primeng/slider';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -23,6 +25,7 @@ import { WorkloadService } from './services/workload-service.service';
   declarations: [
     AppComponent,
     ThroughputComponent,
+    StatisticsGraphComponent,
     NetworkDiagramComponent,
   ],
   imports: [
@@ -35,6 +38,7 @@ import { WorkloadService } from './services/workload-service.service';
     InputNumberModule,
     InputSwitchModule,
     InputTextModule,
+    PanelModule,
     SliderModule,
     FormsModule,
     TabViewModule,

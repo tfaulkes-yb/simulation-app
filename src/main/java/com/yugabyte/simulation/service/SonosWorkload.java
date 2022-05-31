@@ -141,7 +141,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "?"
 			+ ");";
 	
-	private static final String TOP_DOWN_QUERY_old = 
+	private static final String TOP_DOWN_QUERY_RECURSIVE = 
 			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_idx2) IndexScan(t1 topology_idx3) */\n"
 			+ "	WITH RECURSIVE locs AS (\n"
 			+ "		    SELECT\n"
@@ -150,7 +150,6 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "		        topology\n"
 			+ "		    WHERE\n"
 			+ "		        id = ?"
-//			+ "		        AND idtype IN ('USER', 'LOCATION_GROUP', 'LOCATION')\n"
 			+ "		    UNION ALL\n"
 			+ "		        SELECT\n"
 			+ "		            t.id,\n"
@@ -162,14 +161,44 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "		        FROM\n"
 			+ "		                topology t\n"
 			+ "		        INNER JOIN locs l ON t.parentid = l.id\n"
-			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> 'null'\n"
+			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000'\n"
 			+ "		) SELECT\n"
 			+ "		    id,idtype,idname,parentid,children,depth\n"
 			+ "		    FROM\n"
 			+ "		    locs l\n"
 			+ "		  UNION ALL\n"
 			+ "		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth\n"
-			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> 'null';\n";
+			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000';\n";
+
+	private static final String TOP_DOWN_QUERY_RECURSIVE_NEW = 
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_user_idx2) IndexScan(t1 topology_user_idx2) */\n"
+			+ "	WITH RECURSIVE locs AS (\n"
+			+ "		    SELECT\n"
+			+ "		        id,idtype,idname,parentid,children,depth,userId"
+			+ "		    FROM\n"
+			+ "		        topology\n"
+			+ "		    WHERE\n"
+			+ "		        id = ?"
+			+ "		    UNION ALL\n"
+			+ "		        SELECT\n"
+			+ "		            t.id,\n"
+			+ "		            t.idtype,\n"
+			+ "		            t.idname,\n"
+			+ "		            t.parentid,\n"
+			+ "		            t.children,\n"
+			+ "		            t.depth,\n"
+			+ "                 t.userId\n"
+			+ "		        FROM\n"
+			+ "		                topology t\n"
+			+ "		        INNER JOIN locs l ON t.parentid = l.id and t.userId = l.userId\n"
+			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000'\n"
+			+ "		) SELECT\n"
+			+ "		    id,idtype,idname,parentid,children,depth,userId\n"
+			+ "		    FROM\n"
+			+ "		    locs l\n"
+			+ "		  UNION ALL\n"
+			+ "		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth, t1.userId\n"
+			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id and t1.userId = l.userId WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000';\n";
 
 	private static final String TOP_DOWN_QUERY = 
 			"/*+ Set(transaction_read_only on) IndexScan(t topology_user_idx) */\n"
@@ -456,26 +485,27 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	private void runTopDownQuery(UUID uuid, boolean followerReads) {
 //		String query = followerReads ? TOP_DOWN_FOLLOWER_READ : TOP_DOWN_QUERY;	
 		String query = TOP_DOWN_QUERY;
+		final boolean debug = LOGGER.isDebugEnabled();
 		RowCallbackHandler handler = 					
 				new RowCallbackHandler() {
 					@Override
 					public void processRow(ResultSet rs) throws SQLException {
-//						if (LOGGER.isDebugEnabled()) {
-//							LOGGER.debug(String.format(
-//								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
-//								rs.getString("id"),
-//								rs.getString("idtype"),
-//								rs.getString("idname"),
-//								rs.getString("parentid"),
-//								rs.getInt("children"),
-//								rs.getInt("depth")));
-//						}
+						if (debug) {
+							LOGGER.debug(String.format(
+								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+								rs.getString("id"),
+								rs.getString("idtype"),
+								rs.getString("idname"),
+								rs.getString("parentid"),
+								rs.getInt("children"),
+								rs.getInt("depth")));
+						}
 					}
 				};
  
 		
 		if (followerReads) {
-			query = query.replace("?", uuid.toString());
+			query = query.replace("?", "'" + uuid.toString() + "'");
 			jdbcTemplate.query(query,handler);
 		}
 		else {
@@ -587,17 +617,17 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		System.out.printf("Results for bottom up query from %s fetched in %fms\n", uuid.toString(), (System.nanoTime() - now) / 1_000_000.0);
 	 }
 	
-
 	private void runBottomUpQuery(UUID uuid, boolean followerReads) {
 		// String query = followerReads ? BOTTOM_UP_FOLLOWER_READ : BOTTOM_UP_QUERY;
 //		String query = BOTTOM_UP_QUERY.replace("?", "'" + uuid + "'");
 
+		final boolean debug = LOGGER.isDebugEnabled();
 		RowCallbackHandler handler = 
 			new RowCallbackHandler() {
 				
 				@Override
 				public void processRow(ResultSet rs) throws SQLException {
-					if (LOGGER.isDebugEnabled()) {
+					if (debug) {
 						LOGGER.debug(String.format(
 								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
 							rs.getString("id"),
