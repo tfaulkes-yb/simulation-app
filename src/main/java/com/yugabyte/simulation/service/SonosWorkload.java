@@ -71,20 +71,38 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	
 	private static final String CREATE_TOPOLOGY_INDEX = 
 			"Create unique index if not exists topology_idx2 "
-			+ "on topology(parentid, idtype asc, id asc) include "
-			+ "(idname, children, depth) WHERE parentid::text <> 'null'::text "
+			+ "on topology(userid, parentid asc, idtype asc, id asc) include "
+			+ "(idname, children, depth) WHERE parentid <> '00000000-0000-0000-0000-000000000000'::uuid "
 			+ "AND idtype::text = 'LOCATION_GROUP'::text;";
+	private static final String DROP_TOPOLOGY_INDEX = "drop index if exists topology_idx2";
 
     private static final String CREATE_TOPOLOGY_INDEX2 =
             "Create unique index if not exists topology_idx3 "
-            + "on topology(parentid, idtype asc, id asc) include "
-            + "(idname, children, depth) WHERE parentid::text <> 'null'::text "
+            + "on topology(userid, parentid asc, idtype asc, id asc) include "
+            + "(idname, children, depth) WHERE parentid <> '00000000-0000-0000-0000-000000000000'::uuid "
             + "AND idtype::text = 'LOCATION'::text;";
+	private static final String DROP_TOPOLOGY_INDEX2 = "drop index if exists topology_idx3";
+    
+	private static final String CREATE_TOPOLOGY_INDEX_NO_USERID = 
+			"Create unique index if not exists topology_idx4 "
+			+ "on topology(parentid, idtype asc, id asc) include "
+			+ "(idname, children, depth) WHERE parentid <> '00000000-0000-0000-0000-000000000000'::uuid "
+			+ "AND idtype::text = 'LOCATION_GROUP'::text;";
+	private static final String DROP_TOPOLOGY_INDEX_NO_USERID = "drop index if exists topology_idx4";
+
+    private static final String CREATE_TOPOLOGY_INDEX2_NO_USERID =
+            "Create unique index if not exists topology_idx5 "
+            + "on topology(parentid, idtype asc, id asc) include "
+            + "(idname, children, depth) WHERE parentid <> '00000000-0000-0000-0000-000000000000'::uuid "
+            + "AND idtype::text = 'LOCATION'::text;";
+	private static final String DROP_TOPOLOGY_INDEX2_NO_USERID = "drop index if exists topology_idx5";
     
     private static final String CREATE_TOPOLOGY_USER_INDEX = 
 			"Create unique index if not exists topology_user_idx "
 			+ "on topology(userid, id asc) include "
 			+ "(idname, parentid, id, idtype, children, depth);";
+	private static final String DROP_TOPOLOGY_USER_INDEX = "drop index if exists topology_user_idx";
+    
     
     private static final String DROP_TOPOLOGY_TABLE = 
 			"drop table if exists topology cascade;";
@@ -141,15 +159,15 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "?"
 			+ ");";
 	
-	private static final String TOP_DOWN_QUERY_RECURSIVE = 
-			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_idx2) IndexScan(t1 topology_idx3) */\n"
+	private static final String TOP_DOWN_QUERY_RECURSIVE_NO_USERID = 
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexOnlyScan(t topology_idx4) IndexOnlyScan(t1 topology_idx5) */\n"
 			+ "	WITH RECURSIVE locs AS (\n"
 			+ "		    SELECT\n"
 			+ "		        id,idtype,idname,parentid,children,depth"
 			+ "		    FROM\n"
 			+ "		        topology\n"
 			+ "		    WHERE\n"
-			+ "		        id = ?"
+			+ "		        id = ?::uuid"
 			+ "		    UNION ALL\n"
 			+ "		        SELECT\n"
 			+ "		            t.id,\n"
@@ -161,44 +179,43 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			+ "		        FROM\n"
 			+ "		                topology t\n"
 			+ "		        INNER JOIN locs l ON t.parentid = l.id\n"
-			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000'\n"
+			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000'::uuid\n"
 			+ "		) SELECT\n"
 			+ "		    id,idtype,idname,parentid,children,depth\n"
 			+ "		    FROM\n"
 			+ "		    locs l\n"
 			+ "		  UNION ALL\n"
 			+ "		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth\n"
-			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000';\n";
+			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000'::uuid;\n";
 
-	private static final String TOP_DOWN_QUERY_RECURSIVE_NEW = 
-			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexScan(t topology_user_idx2) IndexScan(t1 topology_user_idx2) */\n"
+	private static final String TOP_DOWN_QUERY_RECURSIVE = 
+			"/*+ Set(enable_hashjoin off) Set(enable_mergejoin off) Set(enable_seqscan off) Set(transaction_read_only on) IndexOnlyScan(t topology_idx2) IndexOnlyScan(t1 topology_idx3) */\n"
 			+ "	WITH RECURSIVE locs AS (\n"
 			+ "		    SELECT\n"
-			+ "		        id,idtype,idname,parentid,children,depth,userId"
+			+ "		        userid,id,idtype,idname,parentid,children,depth"
 			+ "		    FROM\n"
 			+ "		        topology\n"
 			+ "		    WHERE\n"
-			+ "		        id = ?"
+			+ "		        id = ?::uuid"
 			+ "		    UNION ALL\n"
 			+ "		        SELECT\n"
+			+ "                 t.userId,\n"
 			+ "		            t.id,\n"
 			+ "		            t.idtype,\n"
 			+ "		            t.idname,\n"
 			+ "		            t.parentid,\n"
 			+ "		            t.children,\n"
-			+ "		            t.depth,\n"
-			+ "                 t.userId\n"
-			+ "		        FROM\n"
-			+ "		                topology t\n"
-			+ "		        INNER JOIN locs l ON t.parentid = l.id and t.userId = l.userId\n"
-			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000'\n"
+			+ "		            t.depth\n"
+			+ "		        FROM topology t\n"
+			+ "		        INNER JOIN locs l ON t.userid = l.userid and t.parentid = l.id\n"
+			+ "		        WHERE t.idtype = 'LOCATION_GROUP' AND t.parentid <> '00000000-0000-0000-0000-000000000000'::uuid\n"
 			+ "		) SELECT\n"
-			+ "		    id,idtype,idname,parentid,children,depth,userId\n"
+			+ "		    userid,id,idtype,idname,parentid,children,depth\n"
 			+ "		    FROM\n"
 			+ "		    locs l\n"
 			+ "		  UNION ALL\n"
-			+ "		  SELECT t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth, t1.userId\n"
-			+ "		  FROM topology t1 INNER JOIN locs l ON t1.parentid = l.id and t1.userId = l.userId WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000';\n";
+			+ "		  SELECT t1.userid, t1.id, t1.idtype, t1.idname, t1.parentid, t1.children, t1.depth\n"
+			+ "		  FROM topology t1 INNER JOIN locs l ON t1.userId = l.userId and t1.parentid = l.id WHERE t1.idtype = 'LOCATION' AND t1.parentid <> '00000000-0000-0000-0000-000000000000'::uuid;\n";
 
 	private static final String TOP_DOWN_QUERY = 
 			"/*+ Set(transaction_read_only on) IndexScan(t topology_user_idx) */\n"
@@ -260,6 +277,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	
 	private enum WorkloadType {
 		CREATE_TABLES, 
+		CREATE_INDEXES,
 		LOAD_DATA,
 		RUN_SIMULATION,
 		RUN_TOP_DOWN_QUERY,
@@ -276,6 +294,19 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	private static final String DROP_TOPOLOGY_STEP = "Drop Topology";
 	private static final String CREATE_MHHMAP_STEP = "Create MhhMap";
 	private static final String CREATE_TOPOLOGY_STEP = "Create Topology";
+	
+	private static final String DROP_INDEX1_STEP = "Drop Index 1";
+	private static final String DROP_INDEX2_STEP = "Drop Index 2";
+	private static final String DROP_INDEX1_NO_USERID_STEP = "Drop Index 1 (no user ids)";
+	private static final String DROP_INDEX2_NO_USERID_STEP = "Drop Index 2 (no user ids)";
+	private static final String DROP_TOPOLOGY_USER_INDEX_STEP = "Drop Topology User Index";
+	
+	private static final String CREATE_INDEX1_STEP = "Create Index 1";
+	private static final String CREATE_INDEX2_STEP = "Create Index 2";
+	
+	private static final String CREATE_INDEX1_NO_USERID_STEP = "Create Index 1 (no user ids)";
+	private static final String CREATE_INDEX2_NO_USERID_STEP = "Create Index 2 (no user ids)";
+	private static final String CREATE_TOPOLOGY_USER_INDEX_STEP = "Create Topology User Index";
 	
     private static final Logger LOGGER = LoggerFactory.getLogger(SonosWorkload.class);
 
@@ -335,6 +366,12 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 
 	private final FixedStepsWorkloadType createTablesWorkloadType;
 	private final FixedStepsWorkloadType createTablesWithTruncateWorkloadType;
+	
+	private final FixedStepsWorkloadType createIndexesNoDropNoOld;
+	private final FixedStepsWorkloadType createIndexesDropNoOld;
+	private final FixedStepsWorkloadType createIndexesNoDropOld;
+	private final FixedStepsWorkloadType createIndexesDropOld;
+
 	private final ThroughputWorkloadType runInstanceType;
 	
 	public SonosWorkload() {
@@ -348,6 +385,41 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				CREATE_MHHMAP_STEP,
 				CREATE_TOPOLOGY_STEP);
 		
+		this.createIndexesNoDropNoOld = new FixedStepsWorkloadType(
+				CREATE_TOPOLOGY_USER_INDEX_STEP,
+				CREATE_INDEX1_STEP,
+				CREATE_INDEX2_STEP);
+
+		this.createIndexesNoDropOld = new FixedStepsWorkloadType(
+				CREATE_TOPOLOGY_USER_INDEX_STEP,
+				CREATE_INDEX1_STEP,
+				CREATE_INDEX2_STEP,
+				CREATE_INDEX1_NO_USERID_STEP,
+				CREATE_INDEX2_NO_USERID_STEP);
+		
+		this.createIndexesDropNoOld = new FixedStepsWorkloadType(
+				DROP_INDEX1_STEP,
+				DROP_INDEX2_STEP,
+				DROP_INDEX1_NO_USERID_STEP,
+				DROP_INDEX2_NO_USERID_STEP,
+				DROP_TOPOLOGY_USER_INDEX_STEP,
+				CREATE_TOPOLOGY_USER_INDEX_STEP,
+				CREATE_INDEX1_STEP,
+				CREATE_INDEX2_STEP);
+
+		this.createIndexesDropOld = new FixedStepsWorkloadType(
+				DROP_INDEX1_STEP,
+				DROP_INDEX2_STEP,
+				DROP_INDEX1_NO_USERID_STEP,
+				DROP_INDEX2_NO_USERID_STEP,
+				DROP_TOPOLOGY_USER_INDEX_STEP,
+				CREATE_TOPOLOGY_USER_INDEX_STEP,
+				CREATE_INDEX1_STEP,
+				CREATE_INDEX2_STEP,
+				CREATE_INDEX1_NO_USERID_STEP,
+				CREATE_INDEX2_NO_USERID_STEP);
+		
+
 		this.runInstanceType = new ThroughputWorkloadType();
 	}
 	
@@ -358,6 +430,14 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			new WorkloadParamDesc("force", false, false)
 		);
 	
+	private WorkloadDesc createIndexesWorkload = new WorkloadDesc(
+			WorkloadType.CREATE_INDEXES.toString(),
+			"Recreate Indexes", 
+			"Recreate the indexes. Normally not needed, unless the indexes have changed.",
+			new WorkloadParamDesc("drop existing indexes", false, true),
+			new WorkloadParamDesc("create older indexes", false, false)
+		);
+			
 	private WorkloadDesc loadDataWorkload =  new WorkloadDesc(
 					WorkloadType.LOAD_DATA.toString(),
 					"Load Data",
@@ -388,7 +468,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			new WorkloadParamDesc("Hierarchy Depth 6", true, true),
 			new WorkloadParamDesc("Hierarchy Depth 7", true, true),
 			new WorkloadParamDesc("Hierarchy Depth 8", true, true),
-			new WorkloadParamDesc("Max Threads", true, 1, 500, 64)
+			new WorkloadParamDesc("Max Threads", true, 1, 500, 64),
+			new WorkloadParamDesc("Use hierarchial query", true, false),
+			new WorkloadParamDesc("Use UserIds in hierarchy query", true, true)
 			)
 			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
 			.nameWorkload(TimerType.WORKLOAD2, "Hierarchy");
@@ -408,7 +490,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	@Override
 	public List<WorkloadDesc> getWorkloads() {
 		return Arrays.asList(
-			createTablesWorkload, loadDataWorkload, runningWorkload, runTopDownQuery, runBottomUpQuery
+			createTablesWorkload, createIndexesWorkload, loadDataWorkload, runningWorkload, runTopDownQuery, runBottomUpQuery
 		);
 	}
 
@@ -447,6 +529,12 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 				timerService.removeCurrentWorkload(createTablesWorkload);
 				return new InvocationResult("Ok");
 			
+			case CREATE_INDEXES:
+				timerService.setCurrentWorkload(createIndexesWorkload);
+				this.createIndexes(values[0].getBoolValue(), values[1].getBoolValue());
+				timerService.removeCurrentWorkload(createIndexesWorkload);
+				return new InvocationResult("Ok");
+			
 			case LOAD_DATA:
 				timerService.setCurrentWorkload(loadDataWorkload);
 				this.loadData(values[0].getIntValue(), values[1].getBoolValue(), values[2].getIntValue(), values[3].getBoolValue());
@@ -462,7 +550,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 						values[4].getIntValue(),
 						values[5].getBoolValue(),
 						this.formInClause(values),
-						values[13].getIntValue()
+						values[13].getIntValue(),
+						values[14].getBoolValue(),
+						values[15].getBoolValue()
 					);
 				return new InvocationResult("Ok");
 
@@ -481,9 +571,137 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			return new InvocationResult(e);
 		}
 	}
+
+	private void createTables(boolean force) {
+		FixedStepsWorkloadType jobType = force ? createTablesWithTruncateWorkloadType : createTablesWorkloadType;
+		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
+		workloadManager.registerWorkloadInstance(workload);
+		workload.execute((stepNum, stepName) -> {
+			switch (stepName) {
+			case DROP_MHHMAP_STEP:
+				jdbcTemplate.execute(DROP_MHHMAP_TABLE);
+				break;
+			case DROP_TOPOLOGY_STEP:
+				jdbcTemplate.execute(DROP_TOPOLOGY_TABLE);
+				break;
+			case CREATE_MHHMAP_STEP:
+				jdbcTemplate.execute(CREATE_MHHMAP_TABLE);
+				break;
+			case CREATE_TOPOLOGY_STEP:
+				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + CREATE_TOPOLOGY_INDEX + CREATE_TOPOLOGY_INDEX2 + CREATE_TOPOLOGY_USER_INDEX);
+				break;
+			}
+		});
+	}
+	
+	private void createIndexes(boolean drop, boolean createOld) {
+		FixedStepsWorkloadType jobType = null;
+		if (drop) {
+			jobType = (createOld ? createIndexesDropOld : createIndexesDropNoOld);
+		}
+		else {
+			jobType = (createOld? createIndexesNoDropOld : createIndexesNoDropNoOld);
+		}
+		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
+		workloadManager.registerWorkloadInstance(workload);
+		workload.execute((stepNum, stepName) -> {
+			switch (stepName) {
+			case DROP_INDEX1_STEP:
+				jdbcTemplate.execute(DROP_TOPOLOGY_INDEX);
+				break;
+			case DROP_INDEX2_STEP:
+				jdbcTemplate.execute(DROP_TOPOLOGY_INDEX2);
+				break;
+			case DROP_INDEX1_NO_USERID_STEP:
+				jdbcTemplate.execute(DROP_TOPOLOGY_INDEX_NO_USERID);
+				break;
+			case DROP_INDEX2_NO_USERID_STEP:
+				jdbcTemplate.execute(DROP_TOPOLOGY_INDEX2_NO_USERID);
+				break;
+			case DROP_TOPOLOGY_USER_INDEX_STEP:
+				jdbcTemplate.execute(DROP_TOPOLOGY_USER_INDEX);
+				break;
+			case CREATE_INDEX1_STEP:
+				jdbcTemplate.execute(CREATE_TOPOLOGY_INDEX);
+				break;
+			case CREATE_INDEX2_STEP:
+				jdbcTemplate.execute(CREATE_TOPOLOGY_INDEX2);
+				break;
+			case CREATE_INDEX1_NO_USERID_STEP:
+				jdbcTemplate.execute(CREATE_TOPOLOGY_INDEX_NO_USERID);
+				break;
+			case CREATE_INDEX2_NO_USERID_STEP:
+				jdbcTemplate.execute(CREATE_TOPOLOGY_INDEX2_NO_USERID);
+				break;
+			case CREATE_TOPOLOGY_USER_INDEX_STEP:
+				jdbcTemplate.execute(CREATE_TOPOLOGY_USER_INDEX);
+				break;
+			}
+		});
+	}
+	
+
+	private void runTopDownQuery_UserIdHierarchy(UUID uuid, boolean followerReads) {
+		String query = TOP_DOWN_QUERY_RECURSIVE;
+		final boolean debug = LOGGER.isDebugEnabled();
+		RowCallbackHandler handler = 					
+				new RowCallbackHandler() {
+					@Override
+					public void processRow(ResultSet rs) throws SQLException {
+						if (debug) {
+							LOGGER.debug(String.format(
+								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+								rs.getString("id"),
+								rs.getString("idtype"),
+								rs.getString("idname"),
+								rs.getString("parentid"),
+								rs.getInt("children"),
+								rs.getInt("depth")));
+						}
+					}
+				};
+ 
+		
+		if (followerReads) {
+			query = query.replace("?", "'" + uuid.toString() + "'");
+			jdbcTemplate.query(query,handler);
+		}
+		else {
+			jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR}, handler);
+		}
+	 }
+
+	private void runTopDownQuery_NoUserIdHierarchy(UUID uuid, boolean followerReads) {
+		String query = TOP_DOWN_QUERY_RECURSIVE_NO_USERID;
+		final boolean debug = LOGGER.isDebugEnabled();
+		RowCallbackHandler handler = 					
+				new RowCallbackHandler() {
+					@Override
+					public void processRow(ResultSet rs) throws SQLException {
+						if (debug) {
+							LOGGER.debug(String.format(
+								"id='%s', idtype='%s', idname='%s', parentid='%s', children=%d, depth=%d\n", 
+								rs.getString("id"),
+								rs.getString("idtype"),
+								rs.getString("idname"),
+								rs.getString("parentid"),
+								rs.getInt("children"),
+								rs.getInt("depth")));
+						}
+					}
+				};
+ 
+		
+		if (followerReads) {
+			query = query.replace("?", "'" + uuid.toString() + "'");
+			jdbcTemplate.query(query,handler);
+		}
+		else {
+			jdbcTemplate.query(query, new Object[] {uuid}, new int[] {Types.VARCHAR}, handler);
+		}
+	 }
 	
 	private void runTopDownQuery(UUID uuid, boolean followerReads) {
-//		String query = followerReads ? TOP_DOWN_FOLLOWER_READ : TOP_DOWN_QUERY;	
 		String query = TOP_DOWN_QUERY;
 		final boolean debug = LOGGER.isDebugEnabled();
 		RowCallbackHandler handler = 					
@@ -513,6 +731,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		}
 	 }
 	
+
 	private void runTopDownQuerySingle(UUID uuid, boolean followerReads) {
 		long now = System.nanoTime();
 //		jdbcTemplate.query(TOP_DOWN_QUERY, new Object[] {uuid}, new int[] {Types.VARCHAR},
@@ -641,7 +860,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			};
  
 		if (followerReads) {
-			String query = BOTTOM_UP_QUERY.replace("?", uuid.toString());
+			String query = BOTTOM_UP_QUERY.replace("?", "'" + uuid.toString() + "'");
 			jdbcTemplate.query(query,handler);
 		}
 		else {
@@ -653,7 +872,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	private void runPointRead(UUID uuid, boolean followerReads) {
 
 		if (followerReads) {
-			String query = READ_TOPOLOGY_FOLLOWER_READ.replace("?", uuid.toString());
+			String query = READ_TOPOLOGY_FOLLOWER_READ.replace("?", "'" + uuid.toString() + "'");
 			jdbcTemplate.execute(query);
 		}
 		else {
@@ -677,29 +896,40 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 					});
 		}
 	}
-	
-	private void createTables(boolean force) {
-		FixedStepsWorkloadType jobType = force ? createTablesWithTruncateWorkloadType : createTablesWorkloadType;
-		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
-		workloadManager.registerWorkloadInstance(workload);
-		workload.execute((stepNum, stepName) -> {
-			switch (stepName) {
-			case DROP_MHHMAP_STEP:
-				jdbcTemplate.execute(DROP_MHHMAP_TABLE);
-				break;
-			case DROP_TOPOLOGY_STEP:
-				jdbcTemplate.execute(DROP_TOPOLOGY_TABLE);
-				break;
-			case CREATE_MHHMAP_STEP:
-				jdbcTemplate.execute(CREATE_MHHMAP_TABLE);
-				break;
-			case CREATE_TOPOLOGY_STEP:
-				jdbcTemplate.execute(CREATE_TOPOLOGY_TABLE + CREATE_TOPOLOGY_INDEX + CREATE_TOPOLOGY_INDEX2 + CREATE_TOPOLOGY_USER_INDEX);
-				break;
-			}
+
+	private void performBackfillWrite() {
+		UUID userUuid = generateUUID();
+		UUID locationUuid = generateUUID();
+
+		String mhhid = "Sonos_" + LoadGeneratorUtils.getUUID().toString() + "." 
+				+ LoadGeneratorUtils.getFixedLengthNumber(10);
+
+		jdbcTemplate.update(BACKFILL_TRANSACTION, new Object[] {
+				userUuid,
+				NULL_UUID,
+				userUuid,
+				IdType.USER.toString(),
+				LoadGeneratorUtils.getName() + " " + LoadGeneratorUtils.getName(),
+				1,
+				2,
+				
+				userUuid,
+				userUuid,
+				locationUuid,
+				IdType.LOCATION.toString(),
+				LoadGeneratorUtils.getName() + " " + LoadGeneratorUtils.getName(),
+				0,
+				1,
+				
+				userUuid,
+				mhhid,
+				locationUuid,
+				"ACTIVE",
+				"UNSPLIT"
 		});
 	}
 	
+
 	private void logCall(String name, Object[] data) {
 		if (LOGGER.isDebugEnabled()) {
 			StringBuffer sb = new StringBuffer();
@@ -894,39 +1124,6 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		return generatedMhhMaps.get();
 	}
 	
-	private void performBackfillWrite() {
-		UUID userUuid = generateUUID();
-		UUID locationUuid = generateUUID();
-
-		String mhhid = "Sonos_" + LoadGeneratorUtils.getUUID().toString() + "." 
-				+ LoadGeneratorUtils.getFixedLengthNumber(10);
-
-		jdbcTemplate.update(BACKFILL_TRANSACTION, new Object[] {
-				userUuid,
-				NULL_UUID,
-				userUuid,
-				IdType.USER.toString(),
-				LoadGeneratorUtils.getName() + " " + LoadGeneratorUtils.getName(),
-				1,
-				2,
-				
-				userUuid,
-				userUuid,
-				locationUuid,
-				IdType.LOCATION.toString(),
-				LoadGeneratorUtils.getName() + " " + LoadGeneratorUtils.getName(),
-				0,
-				1,
-				
-				userUuid,
-				mhhid,
-				locationUuid,
-				"ACTIVE",
-				"UNSPLIT"
-		});
-	}
-	
-	
 	private List<UUID> getRandomTopologyList() {
 		List<UUID> results = new ArrayList<UUID>(ROWS_TO_PRELOAD);
 		jdbcTemplate.query("select id from topology limit " + ROWS_TO_PRELOAD,
@@ -977,7 +1174,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			final int percentagePointReads, 
 			final boolean localReads,
 			final String inClause,
-			final int maxThreads) {
+			final int maxThreads,
+			final boolean useRecursiveQuery,
+			final boolean useQueryWithUserIds) {
 		
 		System.out.println("**** Preloading data...");
 		final List<UUID> users = getUserList(inClause);
@@ -996,7 +1195,17 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 					performBackfillWrite();
 				}
 				else if (value < percentageBackfills + percentageTopDownReads) {
-					runTopDownQuery(users.get(random.nextInt(users.size())), localReads);
+					if (useRecursiveQuery) {
+						if (useQueryWithUserIds) {
+							runTopDownQuery_UserIdHierarchy(users.get(random.nextInt(users.size())), localReads);
+						}
+						else {
+							runTopDownQuery_NoUserIdHierarchy(users.get(random.nextInt(users.size())), localReads);
+						}
+					}
+					else {
+						runTopDownQuery(users.get(random.nextInt(users.size())), localReads);
+					}
 				}
 				else if (value < percentageBackfills + percentageTopDownReads + percentageBottomUpReads) {
 					runBottomUpQuery(locations.get(random.nextInt(locations.size())), localReads);
