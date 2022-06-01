@@ -1165,7 +1165,10 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		});
 		return results;
 	}
-	
+
+	List<UUID> locations = null;
+	List<UUID> topology = null;
+
 	private void runSimulation(
 			final int tps, 
 			final int percentageBackfills, 
@@ -1180,8 +1183,17 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		
 		System.out.println("**** Preloading data...");
 		final List<UUID> users = getUserList(inClause);
-		final List<UUID> locations = getLocationList();
-		final List<UUID> topology = getRandomTopologyList();
+
+		if(locations == null && percentageBottomUpReads > 0){
+			locations = getLocationList();
+		}
+
+		if(topology == null && percentagePointReads > 0){
+			topology = getRandomTopologyList();
+		}
+
+		jdbcTemplate.setFetchSize(1000);
+
 		System.out.println("**** Preload of data done");
 		
 		final int totalCount = percentageBackfills + percentageTopDownReads + percentageBottomUpReads + percentagePointReads; 
