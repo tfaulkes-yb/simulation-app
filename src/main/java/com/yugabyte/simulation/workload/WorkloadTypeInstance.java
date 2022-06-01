@@ -36,6 +36,7 @@ public abstract class WorkloadTypeInstance {
 	
 	public void setTerminatedByException(Exception e) {
 		this.terminatingException = e;
+		this.terminate();
 	}
 	
 	public Exception getTerminatingException() {
