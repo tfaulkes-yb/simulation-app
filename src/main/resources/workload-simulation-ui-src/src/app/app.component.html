@@ -11,16 +11,17 @@
   <span class="fa-solid fa-bars"></span>
 </div>
 
-
 <p-dialog [(visible)]="commsErrorDialog" header="Communications Error" [modal]="true" [closable]="false">
   Communications with the server cannot be established. Please check network connectivity.
 </p-dialog>
+
 <p-dialog [(visible)]="showDialog" header="Workload Management" [modal]="true" [style]="{width: '50vw', height: '75%'}" 
       [draggable]="true" [resizable]="true" [closable]="true" [focusOnShow]="true" [maximizable]="true" (onHide)="closeDialog()">
 
   <p-tabView *ngIf="valuesComputed" (onChange)="handleChange($event)">
     <p-tabPanel header="Usable Operations" leftIcon="fa-solid fa-table">
-      <p-accordion>
+      <div  #accordion id="accordion">
+      <p-accordion [cache]="false">
         <ng-container *ngFor="let workload of getWorkloads(); let i = index">
           <p-accordionTab header="{{workload.name}}" [(selected)]="selected[i]">
             <div class="workload {{workload.name}} mb-2 large-font">
@@ -46,7 +47,7 @@
           </p-accordionTab>
         </ng-container>
       </p-accordion>
-    
+    </div>
     </p-tabPanel>
     <p-tabPanel header="Active Workloads" leftIcon="fa-solid fa-table">
       <p-table [value]="workloadStatuses" dataKey="workloadId" [rowHover]="true" [loading]="activeLoading" responsiveLayout="scroll" [globalFilterFields]="['workloadId','startTime']">

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, ViewChild } from '@angular/core';
 import { TimingData } from './model/timing-data.model';
 import { TimingPoint } from './model/timing-point.model';
 import { WorkloadDesc } from './model/workload-desc.model';
@@ -15,7 +15,10 @@ import { WorkloadStatus } from './model/workload-status.model';
   styleUrls: ['./app.component.css']
 })
 
-export class AppComponent {
+export class AppComponent implements AfterViewInit {
+  @ViewChild("accordion", {static:false}) 
+  accordion!: ElementRef;
+
   status = "This is a test messsage";
   updateThreads : number = 20;
   updateRequests : number = 10000;
@@ -64,6 +67,9 @@ export class AppComponent {
     // this.workloadStatuses.push({name:'randomWorklad', startTime:0, endTime:0, status:'Running'});
     // this.workloadStatuses.push({name:'seedWorkload', startTime:0, endTime:0, status:'Running'});
     // this.workloadStatuses.push({name:'playWorkload', startTime:0, endTime:0, status:'Running'});
+  }
+
+  ngAfterViewInit() {
   }
 
   computeWorkloadValues(workloads : WorkloadDesc[]) {
@@ -264,6 +270,17 @@ export class AppComponent {
   } 
 
   displayDialog() {
+    // setTimeout(() => {
+    //   const accordionElement = this.accordion.nativeElement;
+    //   if (accordionElement) {
+    //     let workloadElementList = accordionElement.querySelectorAll('[role="region"]');
+    //     for (let i = 0; i < workloadElementList.length; i++) {
+    //       let workloadElement = workloadElementList[i];
+    //       (workloadElement as any).setAttribute('style', 'height:0; overflow:hidden;');
+    //     }
+    //   }
+    // },100);
+
     this.status = "";
     let count = this.getWorkloads().length;
     for (let i =0; i < count; i++) {
