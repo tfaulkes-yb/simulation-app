@@ -336,6 +336,10 @@ public class ThroughputWorkloadType extends WorkloadType {
 		}
 		
 		@Override
+		protected void doInitialize() {
+		}
+		
+		@Override
 		public WorkloadType getType() {
 			return ThroughputWorkloadType.this;
 		}
