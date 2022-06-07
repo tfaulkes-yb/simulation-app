@@ -1192,7 +1192,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			topology = getRandomTopologyList();
 		}
 
-		jdbcTemplate.setFetchSize(1000);
+		jdbcTemplate.setFetchSize(100000);
 
 		System.out.println("**** Preload of data done");
 		

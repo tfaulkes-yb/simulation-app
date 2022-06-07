@@ -126,3 +126,7 @@ figure {
 	margin-inline-start: 0;
 	margin-inline-end: 0;
 }
+
+.p-panel .p-panel-header {
+	background-color: rgb(24, 24, 168) !important;
+}

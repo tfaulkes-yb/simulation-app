@@ -1,27 +1,71 @@
-<div class="outer" (wheel)="onMouseWheel($event)">
-  <div style="height: 60%; width: 50%; margin: 0; padding: 0; display: inline-block; float: left;">
-    <app-network-diagram></app-network-diagram>
+<div (wheel)="onMouseWheel($event)">
+  <p-panel header="Network Diagram and Aggregate Statistics" [toggleable]="true" [collapsed]="false">
+      <div class="grid">
+        <div class="col" style="height: 600px;">
+          <div style = "width: 100%; height: 100%; background-color: black;">
+            <app-network-diagram></app-network-diagram>
+          </div>
+        </div>
+        <div class="col" style="height: 600px;">
+          <div style = "width: 100%; height: 100%; background-color: black;">
+            <div style="width: 100%; height: 50%">
+              <app-statistics-graph style="width: 100%" [idName]="'workload2Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Latency"></app-statistics-graph> 
+            </div>
+            <div style="width: 100%; height: 50%">
+              <app-statistics-graph [idName]="'workload2Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Throughput"></app-statistics-graph> 
+            </div>
+          </div>
+        </div>
+      </div>
+  </p-panel>
+
+  <div class="mt-2">
+  <p-panel header="Active Workloads" [toggleable]="true" [collapsed]="true">
+    <p-panel header="Management Workload" [toggleable]="true" [collapsed]="false">
+      <ng-template pTemplate="icons">
+        <button pButton class="p-panel-header-icon p-link" (click)="menu.toggle($event)">
+          <span class="pi pi-cog"></span>
+        </button>
+        <p-menu #menu id="config_menu" [model]="items" [popup]="true"></p-menu>
+      </ng-template>
+      <div class="grid">
+        <div class="col" style="height: 300px;">
+          <div style = "width: 100%; height: 100%; background-color: black;">
+            <app-statistics-graph style="width: 100%" [idName]="'workload1Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Latency"></app-statistics-graph> 
+          </div>
+        </div>
+        <div class="col" style="height: 300px;">
+          <div style = "width: 100%; height: 100%; background-color: black;">
+            <app-statistics-graph [idName]="'workload1Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Throughput"></app-statistics-graph> 
+          </div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="col" style="height: 10rem;">
+          <div style = "width: 100%; height: 100%; background-color: black;">
+            <app-steps-diagram style="width: 100%" [steps]="steps" [index]="stepIndex"></app-steps-diagram>
+          </div>
+        </div>
+      </div>
+
+    </p-panel>
+  </p-panel>
   </div>
-  <app-throughput [idName]="'workload1Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Latency"></app-throughput> 
-  <app-throughput [idName]="'workload2Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Latency"></app-throughput> 
-  <app-throughput [idName]="'workload1Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Throughput"></app-throughput> 
-  <app-throughput [idName]="'workload2Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Throughput"></app-throughput> 
 </div>
-<div style="position: absolute; top: 20px; left: 20px; width: 20px; height: 20px; cursor: pointer;" (click)="displayDialog()">
+<div style="position: absolute; top: 25px; left: 10px; width: 20px; height: 20px; cursor: pointer;" (click)="displayDialog()">
   <span class="fa-solid fa-bars"></span>
 </div>
+
 
 <p-dialog [(visible)]="commsErrorDialog" header="Communications Error" [modal]="true" [closable]="false">
   Communications with the server cannot be established. Please check network connectivity.
 </p-dialog>
-
 <p-dialog [(visible)]="showDialog" header="Workload Management" [modal]="true" [style]="{width: '50vw', height: '75%'}" 
       [draggable]="true" [resizable]="true" [closable]="true" [focusOnShow]="true" [maximizable]="true" (onHide)="closeDialog()">
 
   <p-tabView *ngIf="valuesComputed" (onChange)="handleChange($event)">
     <p-tabPanel header="Usable Operations" leftIcon="fa-solid fa-table">
-      <div  #accordion id="accordion">
-      <p-accordion [cache]="false">
+      <p-accordion>
         <ng-container *ngFor="let workload of getWorkloads(); let i = index">
           <p-accordionTab header="{{workload.name}}" [(selected)]="selected[i]">
             <div class="workload {{workload.name}} mb-2 large-font">
@@ -47,7 +91,7 @@
           </p-accordionTab>
         </ng-container>
       </p-accordion>
-    </div>
+    
     </p-tabPanel>
     <p-tabPanel header="Active Workloads" leftIcon="fa-solid fa-table">
       <p-table [value]="workloadStatuses" dataKey="workloadId" [rowHover]="true" [loading]="activeLoading" responsiveLayout="scroll" [globalFilterFields]="['workloadId','startTime']">
@@ -97,76 +141,10 @@
     </p-tabPanel>
     <p-tabPanel header="Completed Workloads" leftIcon="fa-solid fa-table">
     </p-tabPanel>
-    <!--
-    <p-tabPanel header="Table Operations" leftIcon="fa-solid fa-table">
-      <div>
-        <p-button icon="fa-solid fa-table-list" (click)="createTables()" label="Create Tables"></p-button>
-        Create the tables for the operations if they do not already exist
-      </div>
-      <div class="pt-4">
-        <p-button icon="fa-solid fa-table-columns" (click)="truncateTables()" label="Truncate Tables"></p-button>
-        Truncates the tables. Asssumes the tables exist.
-      </div>
-    </p-tabPanel>
-
-    <p-tabPanel header="Submissions Workload" leftIcon="fa-solid fa-right-to-bracket">
-      <div>
-        <div>
-          Threads: {{workload1Threads}}
-          <p></p>
-          <p-slider [(ngModel)]="workload1Threads" [min]="1" [max]="128" ></p-slider>
-        </div>
-        <div class="mt-2 pt-4">
-          Number of Requests: {{workload1Requests}}
-          <p></p>
-          <p-slider [(ngModel)]="workload1Requests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
-        </div>
-        <div class="pt-4">
-          <p-button icon="fa-solid fa-right-to-bracket" (click)="startSubmissionsWorkload(workload1Threads, workload1Requests)" label="Launch Submission Workload"></p-button>
-        </div>
-      </div>
-    </p-tabPanel>
-
-    <p-tabPanel header="Update Workload" leftIcon="fa-solid fa-person-running">
-      <div>
-        <div>
-          Threads: {{updateThreads}}
-          <p></p>
-          <p-slider [(ngModel)]="updateThreads" [min]="1" [max]="128" ></p-slider>
-        </div>
-        <div class="mt-2 pt-4">
-          Number of Requests: {{updateRequests}}
-          <p></p>
-          <p-slider [(ngModel)]="updateRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
-        </div>
-        <div class="pt-4">
-          <p-button icon="fa-solid fa-person-running" (click)="startUpdateWorkload(updateThreads, updateRequests)" label="Launch Update Workload"></p-button>
-        </div>
-      </div>
-    </p-tabPanel>
-
-    <p-tabPanel header="Status Check Workload" leftIcon="fa-solid fa-circle-question">
-      <div>
-        <div>
-          Threads: {{workload2CheckThreads}}
-          <p></p>
-          <p-slider [(ngModel)]="workload2CheckThreads" [min]="1" [max]="128" ></p-slider>
-        </div>
-        <div class="mt-2 pt-4">
-          Number of Requests: {{workload2CheckRequests}}
-          <p></p>
-          <p-slider [(ngModel)]="workload2CheckRequests" [min]="1000" [max]="100000" [step]="1000"></p-slider>
-        </div>
-        <div class="pt-4">
-          <p-button icon="fa-solid fa-person-running" (click)="startStatusCheckWorkload(statusCheckThreads, statusCheckRequests)" label="Launch Status Check Workload"></p-button>
-        </div>
-      </div>
-    </p-tabPanel>
--->
   </p-tabView>
 
   <ng-template pTemplate="footer">
-    <div class="status mt-3" style="color: blue; text-align: left; display: inline-block; width: 80%">
+    <div class="status mt-3" style="color: lightblue; text-align: left; display: inline-block; width: 80%">
       {{status}}
     </div>
   <p-button icon="pi pi-check" (click)="closeDialog()" label="Close"></p-button>

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, OnInit, ViewChild } from '@angular/core';
 import { TimingData } from './model/timing-data.model';
 import { TimingPoint } from './model/timing-point.model';
 import { WorkloadDesc } from './model/workload-desc.model';
@@ -8,6 +8,7 @@ import { WorkloadService } from './services/workload-service.service';
 import { WorkloadParamDesc } from './model/workload-param-desc.model';
 import { InvocationResult } from './model/invocation-result.model';
 import { WorkloadStatus } from './model/workload-status.model';
+import { MenuItem } from 'primeng/api';
 
 @Component({
   selector: 'app-root',
@@ -15,9 +16,11 @@ import { WorkloadStatus } from './model/workload-status.model';
   styleUrls: ['./app.component.css']
 })
 
-export class AppComponent implements AfterViewInit {
+export class AppComponent implements AfterViewInit, OnInit {
   @ViewChild("accordion", {static:false}) 
   accordion!: ElementRef;
+
+  items!: MenuItem[];
 
   status = "This is a test messsage";
   updateThreads : number = 20;
@@ -52,6 +55,14 @@ export class AppComponent implements AfterViewInit {
   commsErrorDialog : boolean = false;
   commsErrorCount : number = 0;
 
+  steps : MenuItem[] = [
+    {label: 'Dropping Topology (3m 27s)'},
+    {label: 'Dropping Mhhmap'},
+    {label: 'Creating Topology'},
+    {label: 'Creating Mhhmap'},
+  ];
+  stepIndex = 1;
+
   private minDuration = 60*1000;
   private maxDuration = this.MAX_READINGS * 1000;
   duration = 3 * 60 * 1000;
@@ -63,13 +74,51 @@ export class AppComponent implements AfterViewInit {
     },340);
 
     workloadService.getWorkloadObservable().subscribe( data => this.computeWorkloadValues(data));
-    // this.workloadStatuses.push({name:'testWorkload', startTime:0, endTime:0, status:'Running'});
-    // this.workloadStatuses.push({name:'randomWorklad', startTime:0, endTime:0, status:'Running'});
-    // this.workloadStatuses.push({name:'seedWorkload', startTime:0, endTime:0, status:'Running'});
-    // this.workloadStatuses.push({name:'playWorkload', startTime:0, endTime:0, status:'Running'});
+  }
+
+  ngOnInit() {
+    this.items = [
+      {
+          label: 'Options',
+          items: [{
+              label: 'Stop Workload',
+              icon: 'pi pi-refresh',
+              command: (evt) => {
+                  this.stopWorkload(evt);
+              }
+          },
+          {
+              label: 'Delete',
+              icon: 'pi pi-times',
+              command: () => {
+                  this.delete();
+              }
+          }
+      ]},
+      // {
+      //     label: 'Navigate',
+      //     items: [{
+      //         label: 'Angular',
+      //         icon: 'pi pi-external-link',
+      //         url: 'http://angular.io'
+      //     },
+      //     {
+      //         label: 'Router',
+      //         icon: 'pi pi-upload',
+      //         routerLink: '/fileupload'
+      //     }
+      // ]}
+    ];
   }
 
   ngAfterViewInit() {
+  }
+
+  stopWorkload(evt :any) {
+    console.log("update");
+  }
+  delete() {
+    console.log("delete");
   }
 
   computeWorkloadValues(workloads : WorkloadDesc[]) {
@@ -260,8 +309,8 @@ export class AppComponent implements AfterViewInit {
 
   @HostListener('wheel', ['$event'])
   onMouseWheel(event : any) {
-    if ((event.srcElement.closest('p-dialog') == null)  && (event.srcElement.closest('figure') != null) || event.shiftKey) {
-//    if (event.shiftKey) {
+    // if ((event.srcElement.closest('p-dialog') == null)  && (event.srcElement.closest('figure') != null) || event.shiftKey) {
+   if (event.shiftKey) {
       event.preventDefault();
       let amount = event.wheelDelta;
       let change = 1+(amount/1200);
@@ -294,58 +343,58 @@ export class AppComponent implements AfterViewInit {
     this.showDialog = false;
   }
 
-  createTables() {
-    this.status = "Creating tables...";
-    this.dataSource.createTables().subscribe(data => {
-      this.status = "Table creation complete.";
-    },
-    error => {
-      this.status = "Table creation failed."
-    });
-  }
+  // createTables() {
+  //   this.status = "Creating tables...";
+  //   this.dataSource.createTables().subscribe(data => {
+  //     this.status = "Table creation complete.";
+  //   },
+  //   error => {
+  //     this.status = "Table creation failed."
+  //   });
+  // }
 
-  truncateTables() {
-    this.status = "Truncating tables...";
-    this.dataSource.truncateTables().subscribe(data => {
-      this.status = "Table truncation complete.";
-    },
-    error => {
-      this.status = "Table truncation failed."
-    });
-  }
+  // truncateTables() {
+  //   this.status = "Truncating tables...";
+  //   this.dataSource.truncateTables().subscribe(data => {
+  //     this.status = "Table truncation complete.";
+  //   },
+  //   error => {
+  //     this.status = "Table truncation failed."
+  //   });
+  // }
 
-  startUpdateWorkload(numThreads : number, numRequests : number) {
-    this.status = "Update workload starting...";
-    this.dataSource.startUpdateWorkload(numThreads, numRequests).subscribe(data => {
-      this.status = "Update workload complete";
-    },
-    error => {
-      this.status = "Update workload failed."
-    });
-    this.status = "Update workload started.";
-  }
+  // startUpdateWorkload(numThreads : number, numRequests : number) {
+  //   this.status = "Update workload starting...";
+  //   this.dataSource.startUpdateWorkload(numThreads, numRequests).subscribe(data => {
+  //     this.status = "Update workload complete";
+  //   },
+  //   error => {
+  //     this.status = "Update workload failed."
+  //   });
+  //   this.status = "Update workload started.";
+  // }
 
-  startStatusCheckWorkload(numThreads : number, numRequests : number) {
-    this.status = "Status check workload starting...";
-    this.dataSource.startStatusChecksWorkload(numThreads, numRequests).subscribe(data => {
-      this.status = "Status check workload complete";
-    },
-    error => {
-      this.status = "Status check workload failed."
-    });
-    this.status = "Status check workload started.";
-  }
+  // startStatusCheckWorkload(numThreads : number, numRequests : number) {
+  //   this.status = "Status check workload starting...";
+  //   this.dataSource.startStatusChecksWorkload(numThreads, numRequests).subscribe(data => {
+  //     this.status = "Status check workload complete";
+  //   },
+  //   error => {
+  //     this.status = "Status check workload failed."
+  //   });
+  //   this.status = "Status check workload started.";
+  // }
 
-  startSubmissionsWorkload(numThreads : number, numRequests : number) {
-    this.status = "Submissions workload starting...";
-    this.dataSource.startSubmissionsWorkload(numThreads, numRequests).subscribe(data => {
-      this.status = "Submissions workload complete";
-    },
-    error => {
-      this.status = "Submissions workload failed."
-    });
-    this.status = "Submissions workload started.";
-  }
+  // startSubmissionsWorkload(numThreads : number, numRequests : number) {
+  //   this.status = "Submissions workload starting...";
+  //   this.dataSource.startSubmissionsWorkload(numThreads, numRequests).subscribe(data => {
+  //     this.status = "Submissions workload complete";
+  //   },
+  //   error => {
+  //     this.status = "Submissions workload failed."
+  //   });
+  //   this.status = "Submissions workload started.";
+  // }
 
 
 }
