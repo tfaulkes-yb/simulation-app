@@ -54,11 +54,11 @@ public class FixedStepsWorkloadType extends WorkloadType {
 					runner.run(step, currentStep.getName());
 					currentStep.complete(timer.end(ExecutionStatus.SUCCESS));
 					step++;
-					System.out.printf("Step %d (%s) completed in %fms\n", step, currentStep.getName(), currentStep.getTimeInNs()/1000000.0);
+					System.out.printf("Step %d (%s) completed in %fms\n", step, currentStep.getName(), currentStep.getExecutionTimeInNs()/1000000.0);
 				}
 				catch (Exception e) {
 					this.setTerminatedByException(e);
-					timer.end(ExecutionStatus.ERROR);
+					currentStep.complete(timer.end(ExecutionStatus.ERROR));
 					throw e;
 				}
 			}

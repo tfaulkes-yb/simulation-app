@@ -2,6 +2,7 @@ package com.yugabyte.simulation.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
+import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadSimulationDAO;
 import com.yugabyte.simulation.dao.WorkloadStatus;
@@ -75,6 +77,16 @@ public class WorkloadSimulationController {
     	return new InvocationResult("Ok");
     }
     
+    @GetMapping("/getResults/{afterTime}")
+    @ResponseBody
+    public Map<TimerType, List<TimerResult>> getResults(
+    		@PathVariable(name = "afterTime") long afterTime) {
+    	
+    	return timerService.getResults(afterTime);
+    }
+
+    
+    /*
     @GetMapping("/create-table")
     public int createTable(){
         return workloadSimulationDAO.createDBTableIfNeeded();
@@ -220,7 +232,7 @@ public class WorkloadSimulationController {
             return  result;
         }
     }
-
+	*/
 
 }
 

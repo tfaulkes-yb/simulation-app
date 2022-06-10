@@ -22,9 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.datasource.DataSourceUtils;
-import org.springframework.jdbc.support.SQLExceptionSubclassTranslator;
-import org.springframework.jdbc.support.SQLExceptionTranslator;
-import org.springframework.stereotype.Repository;
 
 import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamType;
@@ -42,7 +39,7 @@ import com.yugabyte.simulation.workload.ThroughputWorkloadType.ThroughputWorkloa
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
-@Repository
+//@Repository
 public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSimulation {
 
 	@Autowired

@@ -3,7 +3,7 @@ package com.yugabyte.simulation.workload;
 public class WorkloadStep {
 	private final String name;
 	private boolean complete = false;
-	private long timeInNs = -1;
+	private long executionTimeInNs = -1;
 	public WorkloadStep(String name) {
 		this.name = name;
 	}
@@ -13,7 +13,7 @@ public class WorkloadStep {
 	}
 	
 	public void complete(long timeInNs) {
-		this.timeInNs = timeInNs;
+		this.executionTimeInNs = timeInNs;
 		this.complete();
 	}
 	
@@ -25,11 +25,7 @@ public class WorkloadStep {
 		return name;
 	}
 	
-	public void setTimeInNs(long timeInMs) {
-		this.timeInNs = timeInMs;
-	}
-	
-	public long getTimeInNs() {
-		return timeInNs;
+	public long getExecutionTimeInNs() {
+		return executionTimeInNs;
 	}
 }

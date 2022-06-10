@@ -88,7 +88,7 @@ export class AppComponent implements AfterViewInit, OnInit {
               }
           },
           {
-              label: 'Delete',
+              label: 'Export Statistics',
               icon: 'pi pi-times',
               command: () => {
                   this.delete();
