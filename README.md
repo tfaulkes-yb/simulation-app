@@ -34,7 +34,7 @@ Addition JAVA_OPTS parameters: max-pool-size, dbname, port
 docker pull akscjo/yb-workload-simu-app-so
 ```
 ```
-sudo docker run -p 8080:8080 -e "JAVA_OPTS=-Dnode=<database-host-name> -Duser=<userid> -Dpassword=<password>" docker.io/aksco/yb-workload-simu-app-so
+sudo docker run -p 8080:8080 -e "JAVA_OPTS=-Dnode=<database-host-name> -Duser=<userid> -Dpassword=<password>" docker.io/akscjo/yb-workload-simu-app-so
 ```
 ``` 
 Addition JAVA_OPTS parameters: max-pool-size, dbname, port
