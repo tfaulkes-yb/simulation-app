@@ -52,18 +52,25 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 		RUN_SIMULATION,
 	}		
 	
-	private static final String DROP_TABLE_STEP = "Drop Table";
-	private static final String CREATE_TABLE_STEP = "Create Table";
+//	private static final String DROP_TABLE_STEP = "Drop Table";
+//	private static final String CREATE_TABLE_STEP = "Create Table";
 
 	private final FixedStepsWorkloadType createTablesWorkloadType;
-	
 	private final ThroughputWorkloadType runInstanceType;
 	
 	public SimpleSelectWorkload() {
-		this.createTablesWorkloadType = new FixedStepsWorkloadType(
-				DROP_TABLE_STEP,
-				CREATE_TABLE_STEP);
+//		this.createTablesWorkloadType = new FixedStepsWorkloadType(
+//				DROP_TABLE_STEP,
+//				CREATE_TABLE_STEP);
 		
+		this.createTablesWorkloadType = new FixedStepsWorkloadType(
+				new FixedStepsWorkloadType.Step("Pause 1", (a,b) -> { try { Thread.sleep(5000);} catch (Exception e) {} }),
+				new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),
+				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(20000);} catch (Exception e) {} }),
+				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),
+				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(3000);} catch (Exception e) {} })
+		);
+				
 		this.runInstanceType = new ThroughputWorkloadType();
 	}
 	
@@ -77,8 +84,8 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 			WorkloadType.RUN_SIMULATION.toString(),
 			"Simulation",
 			"Run a simulation of a simple table",
-			new WorkloadParamDesc("Throughput (tps)", true, 1, 1000000, 500),
-			new WorkloadParamDesc("Max Threads", true, 1, 500, 64)
+			new WorkloadParamDesc("Throughput (tps)", 1, 1000000, 500),
+			new WorkloadParamDesc("Max Threads", 1, 500, 64)
 		);
 	
 	@Override
@@ -95,9 +102,7 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 		try {
 			switch (type) {
 			case CREATE_TABLES:
-				timerService.setCurrentWorkload(createTablesWorkload);
 				this.createTables();
-				timerService.removeCurrentWorkload(createTablesWorkload);
 				return new InvocationResult("Ok");
 			
 			case RUN_SIMULATION:
@@ -113,28 +118,29 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 	}
 
 	private void createTables() {
-		FixedStepsWorkloadType jobType = createTablesWorkloadType;
-		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
-		workloadManager.registerWorkloadInstance(workload);
-		workload.execute((stepNum, stepName) -> {
-			switch (stepName) {
-			case DROP_TABLE_STEP:
-				jdbcTemplate.execute(DROP_TABLE);
-				break;
-			case CREATE_TABLE_STEP:
-				jdbcTemplate.execute(CREATE_TABLE);
-				break;
-			}
-		});
+//		FixedStepsWorkloadType jobType = createTablesWorkloadType;
+//		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
+//		workloadManager.registerWorkloadInstance(workload);
+//		workload.execute((stepNum, stepName) -> {
+//			switch (stepName) {
+//			case DROP_TABLE_STEP:
+//				jdbcTemplate.execute(DROP_TABLE);
+//				break;
+//			case CREATE_TABLE_STEP:
+//				jdbcTemplate.execute(CREATE_TABLE);
+//				break;
+//			}
+//		});
+		createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
 	}
 	
 
 	private void runSimulation(int tps, int maxThreads) {
 		jdbcTemplate.setFetchSize(1000);
 
-		ThroughputWorkloadInstance instance = runInstanceType.createInstance(timerService).setMaxThreads(maxThreads);
-		workloadManager.registerWorkloadInstance(instance);
-		instance
+		runInstanceType
+			.createInstance(timerService, workloadManager)
+			.setMaxThreads(maxThreads)
 			.execute(tps, (customData, threadData) -> {
 				String query = QUERY;
 				jdbcTemplate.query(query,

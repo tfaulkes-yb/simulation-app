@@ -9,6 +9,7 @@ import { WorkloadParamDesc } from './model/workload-param-desc.model';
 import { InvocationResult } from './model/invocation-result.model';
 import { WorkloadStatus } from './model/workload-status.model';
 import { MenuItem } from 'primeng/api';
+import { WorkloadResult } from './model/workload-result.model';
 
 @Component({
   selector: 'app-root',
@@ -22,7 +23,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   items!: MenuItem[];
 
-  status = "This is a test messsage";
+  status = '';
   updateThreads : number = 20;
   updateRequests : number = 10000;
   workload2Threads : number = 10;
@@ -30,9 +31,11 @@ export class AppComponent implements AfterViewInit, OnInit {
   workload1Threads: number = 5;
   workload1Requests : number = 50000;
 
+  AGGREGATION_WORKLOAD = 'Aggregation Counter';
   showDialog = false;
   title = 'workload-simulation-ui-src';
-  currentData : TimingData = {WORKLOAD2 : [], WORKLOAD1 : []};
+  currentData : any = {'Aggregation Counter' : { results:[] }};
+  activeWorkloads : string[] = [];
   startTime = 0;
   MAX_READINGS = 3600;
   WORKLOAD1 = "WORKLOAD1";
@@ -50,7 +53,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   selected : boolean[] = [];
 
   activeLoading : boolean = false;
-  workloadStatuses : WorkloadStatus[] = [];
+  workloadResults : WorkloadResult[] = [];
 
   commsErrorDialog : boolean = false;
   commsErrorCount : number = 0;
@@ -168,7 +171,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     //this.activeLoading = true;
     this.dataSource.getActiveWorkloads().subscribe(workloads => {
       this.activeLoading = false;
-      this.workloadStatuses = workloads;
+      this.workloadResults = workloads;
     });
   }
 
@@ -249,54 +252,47 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   getResults() {
     this.dataSource.getTimingResults(this.startTime).subscribe(data => {
-      if (!data.WORKLOAD2) {
-        return;
-      }
-
-      let newData : TimingData = {WORKLOAD2:[], WORKLOAD1:[]};
-      newData.WORKLOAD2 = data.WORKLOAD2.map((value) =>
-        {
-          return {
-            avgUs : value.avgUs / 1000.0,
-            maxUs : value.maxUs / 1000.0,
-            minUs : value.minUs / 1000.0,
-            numFailed: value.numFailed,
-            numSucceeded: value.numSucceeded,
-            startTimeMs: value.startTimeMs
-          } as TimingPoint
-        });
-      newData.WORKLOAD1 = data.WORKLOAD1.map((value) =>
-        {
-          return {
-            avgUs : value.avgUs / 1000.0,
-            maxUs : value.maxUs / 1000.0,
-            minUs : value.minUs / 1000.0,
-            numFailed: value.numFailed,
-            numSucceeded: value.numSucceeded,
-            startTimeMs: value.startTimeMs
-          } as TimingPoint
-        });
-      if (this.startTime == 0) {
-        this.currentData = newData;
-      }
-      else {
-        // Append these results to the existing data and trim the front if needed
-        this.currentData.WORKLOAD2 = this.currentData.WORKLOAD2.concat(newData.WORKLOAD2);
-        if (this.currentData.WORKLOAD2.length > this.MAX_READINGS) {
-          this.currentData.WORKLOAD2.splice(0, this.currentData.WORKLOAD2.length-this.MAX_READINGS);
-        }
-        this.currentData.WORKLOAD1 = this.currentData.WORKLOAD1.concat(newData.WORKLOAD1);
-        if (this.currentData.WORKLOAD1.length > this.MAX_READINGS) {
-          this.currentData.WORKLOAD1.splice(0, this.currentData.WORKLOAD1.length-this.MAX_READINGS);
-        }
-      }
-      if (this.currentData.WORKLOAD2.length > 0) {
-        this.startTime = this.currentData.WORKLOAD2[this.currentData.WORKLOAD2.length-1].startTimeMs;
-      }
-      let temp = this.currentData;
-      this.currentData = {WORKLOAD2: temp.WORKLOAD2, WORKLOAD1: temp.WORKLOAD1 };
       this.commsErrorCount = 0;
       this.commsErrorDialog = false;
+
+      // Iterate through the workloads based on the information here. 
+      if (!data[this.AGGREGATION_WORKLOAD]) {
+        return;
+      }
+      this.activeWorkloads = [];
+
+      let newData : any = {};
+
+      for (const metricName in data) {
+        if (data[metricName].canBeTerminated) {
+          this.activeWorkloads.push(metricName);
+        }
+        // let metricName = this.AGGREGATION_WORKLOAD;
+
+        newData[metricName] = data[metricName];
+
+        if (this.startTime == 0 || !this.currentData[metricName]) {
+          this.currentData[metricName] = newData[metricName];
+        }
+        else {
+          let currentResults = this.currentData[metricName].results;
+          this.currentData[metricName] = {...newData[metricName]};
+          this.currentData[metricName].results = currentResults;
+          // Append these results to the existing data and trim the front if needed
+          this.currentData[metricName].results = this.currentData[metricName].results.concat(newData[metricName].results);
+        }
+        if (this.currentData[metricName].results.length > this.MAX_READINGS) {
+          this.currentData[metricName].results.splice(0, this.currentData[metricName].results.length-this.MAX_READINGS);
+        }
+        this.currentData[metricName].results = [].concat(this.currentData[metricName].results);
+      }
+      let aggregateResults = this.currentData[this.AGGREGATION_WORKLOAD].results;
+      if (aggregateResults.length > 0) {
+        this.startTime = aggregateResults[aggregateResults.length-1].startTimeMs;
+      }
+      // let temp = this.currentData;
+      // this.currentData = {};
+      // this.currentData[metricName] = temp[metricName];
     },
     (error) => {
       if (!this.commsErrorDialog) {
@@ -342,59 +338,4 @@ export class AppComponent implements AfterViewInit, OnInit {
   closeDialog() {
     this.showDialog = false;
   }
-
-  // createTables() {
-  //   this.status = "Creating tables...";
-  //   this.dataSource.createTables().subscribe(data => {
-  //     this.status = "Table creation complete.";
-  //   },
-  //   error => {
-  //     this.status = "Table creation failed."
-  //   });
-  // }
-
-  // truncateTables() {
-  //   this.status = "Truncating tables...";
-  //   this.dataSource.truncateTables().subscribe(data => {
-  //     this.status = "Table truncation complete.";
-  //   },
-  //   error => {
-  //     this.status = "Table truncation failed."
-  //   });
-  // }
-
-  // startUpdateWorkload(numThreads : number, numRequests : number) {
-  //   this.status = "Update workload starting...";
-  //   this.dataSource.startUpdateWorkload(numThreads, numRequests).subscribe(data => {
-  //     this.status = "Update workload complete";
-  //   },
-  //   error => {
-  //     this.status = "Update workload failed."
-  //   });
-  //   this.status = "Update workload started.";
-  // }
-
-  // startStatusCheckWorkload(numThreads : number, numRequests : number) {
-  //   this.status = "Status check workload starting...";
-  //   this.dataSource.startStatusChecksWorkload(numThreads, numRequests).subscribe(data => {
-  //     this.status = "Status check workload complete";
-  //   },
-  //   error => {
-  //     this.status = "Status check workload failed."
-  //   });
-  //   this.status = "Status check workload started.";
-  // }
-
-  // startSubmissionsWorkload(numThreads : number, numRequests : number) {
-  //   this.status = "Submissions workload starting...";
-  //   this.dataSource.startSubmissionsWorkload(numThreads, numRequests).subscribe(data => {
-  //     this.status = "Submissions workload complete";
-  //   },
-  //   error => {
-  //     this.status = "Submissions workload failed."
-  //   });
-  //   this.status = "Submissions workload started.";
-  // }
-
-
 }

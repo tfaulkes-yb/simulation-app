@@ -1,11 +1,12 @@
 package com.yugabyte.simulation.dao;
 
+// THis calss is deprecated, WorkloadResult should be used instead.
+@Deprecated
 public class WorkloadStatus {
 	private String workloadId;
 	private long startTime;
 	private long endTime;
 	private String status;
-	
 	
 	public WorkloadStatus(String workloadId, long startTime, long endTime, String status) {
 		super();

@@ -24,6 +24,7 @@ import { TabViewModule } from 'primeng/tabview';
 import { WorkloadService } from './services/workload-service.service';
 import { StepsDiagramComponent } from './components/steps-diagram/steps-diagram.component';
 import { RouterModule } from '@angular/router';
+import { FixedStepWorkloadComponent } from './components/fixed-step-workload/fixed-step-workload.component';
 
 @NgModule({
   declarations: [
@@ -32,6 +33,7 @@ import { RouterModule } from '@angular/router';
     StatisticsGraphComponent,
     NetworkDiagramComponent,
     StepsDiagramComponent,
+    FixedStepWorkloadComponent,
   ],
   imports: [
     AccordionModule,

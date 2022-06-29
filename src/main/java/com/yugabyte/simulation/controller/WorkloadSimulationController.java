@@ -3,11 +3,6 @@ package com.yugabyte.simulation.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,25 +15,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
-import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.WorkloadDesc;
-import com.yugabyte.simulation.dao.WorkloadSimulationDAO;
+import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.dao.WorkloadStatus;
 import com.yugabyte.simulation.service.WorkloadSimulation;
-import com.yugabyte.simulation.services.TimerService;
-import com.yugabyte.simulation.services.TimerType;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadTypeInstance;
 
 @RestController
 @RequestMapping("/api")
 public class WorkloadSimulationController {
-    @Autowired
-    private WorkloadSimulationDAO workloadSimulationDAO;
+//    @Autowired
+//    private WorkloadSimulationDAO workloadSimulationDAO;
 
-    @Autowired
-    private TimerService timerService;
-    
     @Autowired
     private WorkloadManager workloadManager;
     
@@ -58,31 +47,31 @@ public class WorkloadSimulationController {
     }
     
     @GetMapping("get-active-workloads")
-    public List<WorkloadStatus> getActiveWorkloads() {
+    public List<WorkloadResult> getActiveWorkloads() {
     	List<WorkloadTypeInstance> activeWorkloads = workloadManager.getActiveWorkloads();
-    	List<WorkloadStatus> statuses = new ArrayList<WorkloadStatus>();
+    	List<WorkloadResult> statuses = new ArrayList<WorkloadResult>();
     	for (WorkloadTypeInstance instance : activeWorkloads) {
-    		statuses.add(new WorkloadStatus(instance.getWorkloadId(), instance.getStartTime(), instance.getEndTime(), 
-    				instance.getStatus().toString()));
+    		if (instance.getType().canBeTerminated()) {
+    			statuses.add(instance.getWorkloadResult(Long.MAX_VALUE));
+//	    		statuses.add(new WorkloadStatus(instance.getWorkloadId(), instance.getStartTime(), instance.getEndTime(), 
+//	    				instance.getStatus().toString()));
+    		}
     	}
     	return statuses;
     }
     
     @GetMapping("terminate-workload/{workloadId}")
     public InvocationResult terminateWorkload(@PathVariable String workloadId) {
-    	WorkloadTypeInstance workload = workloadManager.getWorkloadByName(workloadId);
-    	if (workload != null) {
-    		workload.terminate();
-    	}
+    	workloadManager.terminateWorkload(workloadId);
     	return new InvocationResult("Ok");
     }
     
     @GetMapping("/getResults/{afterTime}")
     @ResponseBody
-    public Map<TimerType, List<TimerResult>> getResults(
+    public Map<String, WorkloadResult> getResults(
     		@PathVariable(name = "afterTime") long afterTime) {
     	
-    	return timerService.getResults(afterTime);
+    	return workloadManager.getResults(afterTime);
     }
 
     

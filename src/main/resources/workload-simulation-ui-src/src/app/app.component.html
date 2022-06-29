@@ -9,10 +9,10 @@
         <div class="col" style="height: 600px;">
           <div style = "width: 100%; height: 100%; background-color: black;">
             <div style="width: 100%; height: 50%">
-              <app-statistics-graph style="width: 100%" [idName]="'workload2Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Latency"></app-statistics-graph> 
+              <app-statistics-graph style="width: 100%" [idName]="'aggregateLatency'" [timingData]="currentData[AGGREGATION_WORKLOAD].results" [duration]="duration" [timingType]="'LATENCY'" [timingMetric]="'Aggregation Counter'" [timingMetricName]="'Aggregate'"></app-statistics-graph> 
             </div>
             <div style="width: 100%; height: 50%">
-              <app-statistics-graph [idName]="'workload2Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD2" [timingMetricName]="workload2Throughput"></app-statistics-graph> 
+              <app-statistics-graph [idName]="'aggregateThroughput'" [timingData]="currentData[AGGREGATION_WORKLOAD].results" [duration]="duration" [timingType]="'THROUGHPUT'" [timingMetric]="'Aggregation Counter'" [timingMetricName]="'Aggregate'"></app-statistics-graph> 
             </div>
           </div>
         </div>
@@ -20,7 +20,17 @@
   </p-panel>
 
   <div class="mt-2">
-  <p-panel header="Active Workloads" [toggleable]="true" [collapsed]="true">
+  <p-panel header="Active Workloads" [toggleable]="true" [collapsed]="false">
+    <div *ngFor="let panel of activeWorkloads">
+      <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false">
+        <div *ngIf="currentData[panel].workloadTypeName == 'THROUGHPUT'"> Throughput</div>
+        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_STEP'">
+          <app-fixed-step-workload [data]="currentData[panel]"></app-fixed-step-workload>
+        </div>
+        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_TARGET'"> Fixed</div>
+      </p-panel>
+    </div>
+    <!--
     <p-panel header="Management Workload" [toggleable]="true" [collapsed]="false">
       <ng-template pTemplate="icons">
         <button pButton class="p-panel-header-icon p-link" (click)="menu.toggle($event)">
@@ -36,7 +46,7 @@
         </div>
         <div class="col" style="height: 300px;">
           <div style = "width: 100%; height: 100%; background-color: black;">
-            <app-statistics-graph [idName]="'workload1Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Throughput"></app-statistics-graph> 
+            <app-statistics-graph [idName]="'workload1Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Throughput"></app-statistics-graph>
           </div>
         </div>
       </div>
@@ -47,8 +57,8 @@
           </div>
         </div>
       </div>
-
     </p-panel>
+    -->
   </p-panel>
   </div>
 </div>
@@ -94,7 +104,7 @@
     
     </p-tabPanel>
     <p-tabPanel header="Active Workloads" leftIcon="fa-solid fa-table">
-      <p-table [value]="workloadStatuses" dataKey="workloadId" [rowHover]="true" [loading]="activeLoading" responsiveLayout="scroll" [globalFilterFields]="['workloadId','startTime']">
+      <p-table [value]="workloadResults" dataKey="workloadId" [rowHover]="true" [loading]="activeLoading" responsiveLayout="scroll" [globalFilterFields]="['workloadId','startTime']">
         <ng-template pTemplate="header">
           <tr>
             <th pSortableColumn="workloadId">

@@ -7,6 +7,7 @@ import { WorkloadDesc } from '../model/workload-desc.model';
 import { ParamValue } from '../model/param-value.model';
 import { InvocationResult } from '../model/invocation-result.model';
 import { WorkloadStatus } from '../model/workload-status.model';
+import { WorkloadResult } from '../model/workload-result.model';
 
 const PROTOCOL = 'http';
 const PORT = 8080;
@@ -35,10 +36,13 @@ export class YugabyteDataSourceService {
     }
   }
 
-  getTimingResults(afterTime : number) : Observable<TimingData> {
-    return this.http.get<TimingData>(this.baseUrl + "api/getResults/" + afterTime);
+  // getTimingResults(afterTime : number) : Observable<TimingData> {
+  //   return this.http.get<TimingData>(this.baseUrl + "api/getResults/" + afterTime);
+  // }
+  getTimingResults(afterTime : number) : Observable<any> {
+    return this.http.get<any>(this.baseUrl + "api/getResults/" + afterTime);
   }
-
+  
   createTables() : Observable<number> {
     return this.http.get<number>(this.baseUrl + "api/create-table");
   }
@@ -68,8 +72,8 @@ export class YugabyteDataSourceService {
     return this.http.post<InvocationResult>(this.baseUrl+"api/invoke-workload/" + name, params);
   }
 
-  getActiveWorkloads() : Observable<WorkloadStatus[]> {
-    return this.http.get<WorkloadStatus[]>(this.baseUrl+"api/get-active-workloads");
+  getActiveWorkloads() : Observable<WorkloadResult[]> {
+    return this.http.get<WorkloadResult[]>(this.baseUrl+"api/get-active-workloads");
   }
 
   terminateWorkload(workloadId : string) {

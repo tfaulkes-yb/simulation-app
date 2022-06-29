@@ -49,16 +49,19 @@ export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChange
   idName = 'chart';
 
   @Input()
-  timingData : TimingData = {WORKLOAD1:[], WORKLOAD2: []};
+  timingData : any = {};
 
+  // The sub-part of the timingData which this graph should look at.
   @Input()
-  timingMetric = "WORKLOAD1";
+  timingMetric = "WORKLOAD";
 
+  // Whether to display the LATENCY or THROUGHPUT graph. M
   @Input()
   timingType = "LATENCY";
 
+  // The name of the graph to be displayed in the Title bar
   @Input()
-  timingMetricName = "Workload 1";
+  timingMetricName = "Workload";
 
 
   constructor(
@@ -315,10 +318,10 @@ export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChange
   }
 
   private update() {
-    if (!this.xScale) {
+    if (!this.xScale || !this.timingData ) {
       return;
     }
-    this.data = (this.timingData as any)[this.timingMetric];
+    this.data = (this.timingData);
     let now = Date.now();
     this.minTime = now - this.duration - 1000;
     this.xScale.domain([now - this.duration, now]);
@@ -388,17 +391,17 @@ export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChange
   }
   private getMaxY(point : TimingPoint, minTime? : number) : number {
     if (this.validatePoint(point)) {
-      return point.maxUs;
+      return point.maxUs / 1000.0;
     }
     return 0;
   }
 
   private getY(point : TimingPoint) : number {
-    return this.validatePoint(point) ? point.avgUs : 0;
+    return this.validatePoint(point) ? point.avgUs/1000.0 : 0;
   }
 
   private getMinY(point : TimingPoint) : number {
-    return this.validatePoint(point) ? point.minUs : 0;
+    return this.validatePoint(point) ? point.minUs/1000.0 : 0;
   }
 
   private getTotalTxns(point : TimingPoint, minTime? : number) : number {
@@ -417,7 +420,7 @@ export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChange
     return Math.round(num * 10) / 10;
   }
   private formatLatency(point : TimingPoint) : string {
-    return "Min:"+this.formatToOneDP(point.minUs) + ", Avg:" + this.formatToOneDP(point.avgUs) + ", Max:" + this.formatToOneDP(point.maxUs);
+    return "Min:"+this.formatToOneDP(point.minUs/1000.0) + ", Avg:" + this.formatToOneDP(point.avgUs/1000.0) + ", Max:" + this.formatToOneDP(point.maxUs/1000.0);
   }
 
   private formatThroughput(point : TimingPoint) : string {

@@ -2,22 +2,14 @@ package com.yugabyte.simulation.workload;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.yugabyte.simulation.service.SonosWorkload;
+import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
 import com.yugabyte.simulation.services.Timer;
 import com.yugabyte.simulation.services.TimerService;
-import com.yugabyte.simulation.services.TimerType;
-
-import ch.qos.logback.core.recovery.ResilientSyslogOutputStream;
 
 /**
  * Run a workload with a fixed target. For example, to seed a database with 
@@ -44,17 +36,18 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private final AtomicLong completedCounter;
 		private final AtomicLong startedCounter;
 		private final long target;
-		
+		private final int workloadOrdinal;
 
-		public WorkerThread(int threadId, AtomicBoolean terminate, AtomicLong completedCounter, AtomicLong startedCounter, long target, Object customData, TimerService timerService, ExecuteTask task) {
+		public WorkerThread(int threadId, AtomicBoolean terminate, AtomicLong completedCounter, AtomicLong startedCounter, long target, Object customData, TimerService timerService, ExecuteTask task,int workloadOrdinal) {
 			this.terminate = terminate;
 			this.customData = customData;
 			this.threadData = null;
-			this.timer = timerService.getTimer(TimerType.WORKLOAD2);
+			this.timer = timerService.getTimer();
 			this.task = task;
 			this.completedCounter = completedCounter;
 			this.startedCounter = startedCounter;
 			this.target = target;
+			this.workloadOrdinal = workloadOrdinal;
 		}
 		
 		@Override
@@ -63,14 +56,43 @@ public class FixedTargetWorkloadType extends WorkloadType {
 				timer.start();
 				try {
 					this.threadData = task.run(customData, threadData);
-					timer.end(ExecutionStatus.SUCCESS);
+					timer.end(ExecutionStatus.SUCCESS, workloadOrdinal);
 				}
 				catch (Exception e) {
-					timer.end(ExecutionStatus.ERROR);
+					timer.end(ExecutionStatus.ERROR, workloadOrdinal);
 					// TODO Log exception?
 				}
 				this.completedCounter.incrementAndGet();
 			}
+		}
+	}
+	
+	public static class FixedTargetTimerResult extends TimerResult {
+		private final double percentageComplete;
+		private final long timeRemainingInMs;
+		private final long completed;
+		private final long target;
+		public FixedTargetTimerResult(TimerResult orig, double percentageComplete, long timeRemainingInMs, long completed, long target) {
+			super(orig);
+			this.percentageComplete = percentageComplete;
+			this.timeRemainingInMs = timeRemainingInMs;
+			this.completed = completed;
+			this.target = target;
+		}
+		
+		public double getPercentageComplete() {
+			return percentageComplete;
+		}
+		
+		public long getTimeRemainingInMs() {
+			return timeRemainingInMs;
+		}
+		
+		public long getCompleted() {
+			return completed;
+		}
+		public long getTarget() {
+			return target;
 		}
 	}
 	
@@ -82,10 +104,9 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private ExecutorService executor = null;
 		private long target = 0;
 		private Object customData = null;
-		private TimerService timerService;
 		
 		public FixedTargetWorkloadInstance(TimerService timerService) {
-			this.timerService = timerService;
+			super(timerService);
 		}
 		public FixedTargetWorkloadInstance setCustomData(Object customData) {
 			this.customData = customData;
@@ -120,7 +141,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 			this.executor = Executors.newFixedThreadPool(numThreads);
 			this.startTime = System.currentTimeMillis();
 			for (int i = 0; i < numThreads; i++) {
-				WorkerThread worker = new WorkerThread(i, terminate, completedCounter, startedCounter, target, customData, timerService, runner);
+				WorkerThread worker = new WorkerThread(i, terminate, completedCounter, startedCounter, target, customData, getTimerService(), runner, this.getWorkloadOrdinal());
 				executor.submit(worker);
 			}
 		}
@@ -146,6 +167,11 @@ public class FixedTargetWorkloadType extends WorkloadType {
 			long elapsedTime = now - startTime;
 			return (long)((100.0*elapsedTime/percentComplete) - elapsedTime);
 		}
+		
+		@Override
+		protected TimerResult doAugmentTimingResult(TimerResult result) {
+			return new FixedTargetTimerResult(result, getPercentComplete(), getTimeRemainingEstimateInMs(), completedCounter.get(), target);
+		}
 	}
 	
 	@Override
@@ -154,7 +180,9 @@ public class FixedTargetWorkloadType extends WorkloadType {
 	}
 
 	@Override
-	public FixedTargetWorkloadInstance createInstance(TimerService timerService) {
-		return new FixedTargetWorkloadInstance(timerService);
+	public FixedTargetWorkloadInstance createInstance(TimerService timerService, WorkloadManager workloadManager) {
+		FixedTargetWorkloadInstance result = new FixedTargetWorkloadInstance(timerService);
+		workloadManager.registerWorkloadInstance(result);
+		return result;
 	}
 }

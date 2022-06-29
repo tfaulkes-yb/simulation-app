@@ -45,6 +45,15 @@ public class TimerResult {
 			this.avgUs = 0;
 		}
 	}
+	
+	protected TimerResult(TimerResult original) {
+		this.numFailed = original.numFailed;
+		this.numSucceeded = original.numSucceeded;
+		this.avgUs = original.avgUs;
+		this.maxUs = original.maxUs;
+		this.minUs = original.minUs;
+		this.startTimeMs = original.startTimeMs;
+	}
 
 	public long getNumSucceeded() {
 		return numSucceeded;

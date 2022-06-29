@@ -384,17 +384,17 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 			WorkloadType.CREATE_TABLES.toString(),
 			"Create Tables", 
 			"Create the simulation tables. If the tables are already created they will not be re-created unless 'force' is set to true",
-			new WorkloadParamDesc("force", false, false),
-			new WorkloadParamDesc("old index", false, false)
+			new WorkloadParamDesc("force", false),
+			new WorkloadParamDesc("old index", false)
 		);
 	
 	private WorkloadDesc loadDataWorkload =  new WorkloadDesc(
 					WorkloadType.LOAD_DATA.toString(),
 					"Load Data",
 					"Generate test data into the database",
-					new WorkloadParamDesc("Number of locations", true, 1, Integer.MAX_VALUE, 1000),
-					new WorkloadParamDesc("Truncate tables", false, false),
-					new WorkloadParamDesc("Number of threads", true, 1, 1024, 32)
+					new WorkloadParamDesc("Number of locations", 1, Integer.MAX_VALUE, 1000),
+					new WorkloadParamDesc("Truncate tables", false),
+					new WorkloadParamDesc("Number of threads", 1, 1024, 32)
 				)
 				.nameWorkload(TimerType.WORKLOAD2, "MhhMap")
 				.nameWorkload(TimerType.WORKLOAD1, "Topology");
@@ -403,21 +403,21 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 			WorkloadType.RUN_SIMULATION.toString(),
 			"Simulation",
 			"Run a simulation of the day-to-day activities of Sonos. This includes adding locations and looking at component hierarchies",
-			new WorkloadParamDesc("Throughput (tps)", true, 1, 1000000, 500),
-			new WorkloadParamDesc("Backfill ratio", true, 0, 100, 10),
-			new WorkloadParamDesc("Top down read ratio", true, 0, 100, 10),
-			new WorkloadParamDesc("Bottom up read ratio", true, 0, 100, 10),
-			new WorkloadParamDesc("Point read ratio", true, 0, 100, 10),
-			new WorkloadParamDesc("Use local reads", true, false),
+			new WorkloadParamDesc("Throughput (tps)", 1, 1000000, 500),
+			new WorkloadParamDesc("Backfill ratio", 0, 100, 10),
+			new WorkloadParamDesc("Top down read ratio", 0, 100, 10),
+			new WorkloadParamDesc("Bottom up read ratio", 0, 100, 10),
+			new WorkloadParamDesc("Point read ratio", 0, 100, 10),
+			new WorkloadParamDesc("Use local reads", false),
 			
-			new WorkloadParamDesc("Hierarchy Depth 2", true, true),
-			new WorkloadParamDesc("Hierarchy Depth 3", true, true),
-			new WorkloadParamDesc("Hierarchy Depth 4", true, true),
-			new WorkloadParamDesc("Hierarchy Depth 5", true, true),
-			new WorkloadParamDesc("Hierarchy Depth 6", true, true),
-			new WorkloadParamDesc("Hierarchy Depth 7", true, true),
-			new WorkloadParamDesc("Hierarchy Depth 8", true, true),
-			new WorkloadParamDesc("Max Threads", true, 1, 500, 64)
+			new WorkloadParamDesc("Hierarchy Depth 2", true),
+			new WorkloadParamDesc("Hierarchy Depth 3", true),
+			new WorkloadParamDesc("Hierarchy Depth 4", true),
+			new WorkloadParamDesc("Hierarchy Depth 5", true),
+			new WorkloadParamDesc("Hierarchy Depth 6", true),
+			new WorkloadParamDesc("Hierarchy Depth 7", true),
+			new WorkloadParamDesc("Hierarchy Depth 8", true),
+			new WorkloadParamDesc("Max Threads", 1, 500, 64)
 			)
 			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
 			.nameWorkload(TimerType.WORKLOAD2, "Hierarchy");
@@ -495,13 +495,13 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 			WorkloadType.RUN_TOP_DOWN_QUERY.toString(),
 			"Top Down Query",
 			"Run a top down query with the given UUID. The results will be displayed in the server console",
-			new WorkloadParamDesc("UUID", ParamType.STRING, true));
+			new WorkloadParamDesc("UUID", ParamType.STRING));
 
 	private WorkloadDesc runBottomUpQuery = new WorkloadDesc(
 			WorkloadType.RUN_BOTTOM_UP_QUERY.toString(),
 			"Bottom Up Query",
 			"Run a bottom up query with the given UUID. The results will be displayed in the server console",
-			new WorkloadParamDesc("UUID", ParamType.STRING, true));
+			new WorkloadParamDesc("UUID", ParamType.STRING));
 
 	@Override
 	public List<WorkloadDesc> getWorkloads() {
@@ -540,15 +540,11 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 		try {
 			switch (type) {
 			case CREATE_TABLES:
-				timerService.setCurrentWorkload(createTablesWorkload);
 				this.createTables(values[0].getBoolValue(), values[1].getBoolValue());
-				timerService.removeCurrentWorkload(createTablesWorkload);
 				return new InvocationResult("Ok");
 			
 			case LOAD_DATA:
-				timerService.setCurrentWorkload(loadDataWorkload);
 				this.loadData(values[0].getIntValue(), values[1].getBoolValue(), values[2].getIntValue());
-				timerService.removeCurrentWorkload(loadDataWorkload);
 				return new InvocationResult("Ok");
 				
 			case RUN_SIMULATION:
@@ -860,8 +856,8 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 	
 	private void createTables(boolean force, boolean oldIndex) {
 		FixedStepsWorkloadType jobType = force ? createTablesWithTruncateWorkloadType : createTablesWorkloadType;
-		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
-		workloadManager.registerWorkloadInstance(workload);
+		FixedStepWorkloadInstance workload = jobType.createInstance(timerService, workloadManager);
+//		workloadManager.registerWorkloadInstance(workload);
 		workload.execute((stepNum, stepName) -> {
 			switch (stepName) {
 			case DROP_MHHMAP_STEP:
@@ -914,9 +910,9 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 		Object[] data = new Object[] {sonosId, mhhid, locId, status, splitReason};
 		logCall("generateMhhmap", data);
 		
-		Timer timer = timerService.getTimer(TimerType.WORKLOAD2).start();
+//		Timer timer = timerService.getTimer(TimerType.WORKLOAD2).start();
 		jdbcTemplate.update(INSERT_MHHMAP_TABLE, data);
-		timer.end(ExecutionStatus.SUCCESS);
+//		timer.end(ExecutionStatus.SUCCESS);
 		return sonosId;
 
 	}
@@ -936,9 +932,9 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 		Object[] data = new Object[] {parentId == null? "null" : parentId, thisId, type.toString(), idName, children, depth};
 		logCall("generateTopology", data);
 
-		Timer timer = timerService.getTimer(TimerType.WORKLOAD1).start();
+//		Timer timer = timerService.getTimer(TimerType.WORKLOAD1).start();
 		jdbcTemplate.update(INSERT_TOPOLOGY_TABLE, data);
-		timer.end(ExecutionStatus.SUCCESS);
+//		timer.end(ExecutionStatus.SUCCESS);
 		return thisId;
 	}
 	
@@ -1160,8 +1156,8 @@ public class SonosWorkloadOld extends WorkloadSimulationBase implements Workload
 		System.out.println("**** Preload of data done");
 		
 		final int totalCount = percentageBackfills + percentageTopDownReads + percentageBottomUpReads + percentagePointReads; 
-		ThroughputWorkloadInstance instance = runInstanceType.createInstance(timerService).setMaxThreads(maxThreads);
-		workloadManager.registerWorkloadInstance(instance);
+		ThroughputWorkloadInstance instance = runInstanceType.createInstance(timerService, workloadManager)
+				.setMaxThreads(maxThreads);
 		instance
 			.execute(tps, (customData, threadData) -> {
 				Random random = ThreadLocalRandom.current();
