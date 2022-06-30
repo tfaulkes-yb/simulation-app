@@ -84,13 +84,18 @@ public abstract class WorkloadTypeInstance {
 	public List<TimerResult> getTimingResults() {
 		return timingResults;
 	}
-	public void submitTimingResult(TimerResult result, int maxLength) {
+	
+	public abstract String formatToCsv(TimerResult result);
+	public abstract String getCsvHeader();
+	
+	public TimerResult submitTimingResult(TimerResult result, int maxLength) {
 		synchronized (timingResults) {
 			TimerResult newResult = doAugmentTimingResult(result);
 			timingResults.add(newResult);
 			if (timingResults.size() > maxLength) {
 				timingResults.remove(0);
 			}
+			return newResult;
 		}
 	}
 	protected TimerService getTimerService() {

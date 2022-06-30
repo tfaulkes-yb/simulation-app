@@ -1,13 +1,14 @@
 package com.yugabyte.simulation.workload;
 
+import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.exception.MultipleAggregationWorkloadException;
 import com.yugabyte.simulation.services.TimerService;
 
 public final class AggregationWorkloadType extends WorkloadType {
 
+	private static final AggregationWorkloadInstanceType instance = null; 
 	private final class AggregationWorkloadInstanceType extends WorkloadTypeInstance {
 
-		private static final AggregationWorkloadInstanceType instance = null; 
 		public AggregationWorkloadInstanceType(TimerService timerService) {
 			super(timerService);
 			if (instance != null) {
@@ -29,6 +30,20 @@ public final class AggregationWorkloadType extends WorkloadType {
 		@Override
 		public boolean isComplete() {
 			return false;
+		}
+		
+		private static final String csvHeader = "Start Time,Min Time Us,Average Time Us,Max Time Us,Num Succeeded,Num Failed\n";
+		private static final String csvFormat = "%d,%d,%d,%d,%d,%d\n";
+		
+		@Override
+		public String formatToCsv(TimerResult result) {
+			return String.format(csvFormat, result.getStartTimeMs(), result.getMinUs(), result.getAvgUs(),
+					result.getMaxUs(), result.getNumSucceeded(), result.getNumFailed());
+		}
+		
+		@Override
+		public String getCsvHeader() {
+			return csvHeader;
 		}
 	}
 	

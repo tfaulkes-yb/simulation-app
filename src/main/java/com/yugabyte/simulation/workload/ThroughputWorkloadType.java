@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
 import com.yugabyte.simulation.services.Timer;
 import com.yugabyte.simulation.services.TimerService;
@@ -352,6 +353,20 @@ public class ThroughputWorkloadType extends WorkloadType {
 				this.threadManager.terminate();
 			} catch (InterruptedException e) {
 			}
+		}
+		
+		private static final String csvHeader = "Start Time,Min Time Us,Average Time Us,Max Time Us,Num Succeeded,Num Failed\n";
+		private static final String csvFormat = "%d,%d,%d,%d,%d,%d\n";
+		
+		@Override
+		public String formatToCsv(TimerResult result) {
+			return String.format(csvFormat, result.getStartTimeMs(), result.getMinUs(), result.getAvgUs(),
+					result.getMaxUs(), result.getNumSucceeded(), result.getNumFailed());
+		}
+		
+		@Override
+		public String getCsvHeader() {
+			return csvHeader;
 		}
 		
 		public double getCurrentRate() {

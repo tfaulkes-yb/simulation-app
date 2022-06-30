@@ -150,6 +150,23 @@ public class FixedTargetWorkloadType extends WorkloadType {
 			} catch (InterruptedException e) {
 			}
 		}
+		
+		private static final String csvHeader = "Start Time,Min Time Us,Average Time Us,Max Time Us,Num Succeeded,Num Failed,Percentage Complete,Time Remaining Ms,Completed,Target\n";
+		private static final String csvFormat = "%d,%d,%d,%d,%d,%d,%f,%d,%d,%d\n";
+
+		@Override
+		public String formatToCsv(TimerResult result) {
+			FixedTargetTimerResult fixedResult = (FixedTargetTimerResult)result;
+			return String.format(csvFormat, fixedResult.getStartTimeMs(), fixedResult.getMinUs(), fixedResult.getAvgUs(),
+					fixedResult.getMaxUs(), fixedResult.getNumSucceeded(), fixedResult.getNumFailed(),
+					fixedResult.getPercentageComplete(), fixedResult.getTimeRemainingInMs(),
+					fixedResult.getCompleted(), fixedResult.getTarget());
+		}
+		
+		@Override
+		public String getCsvHeader() {
+			return csvHeader;
+		}
 
 		public void execute(int numThreads, int target, ExecuteTask runner) {
 			this.target = target;

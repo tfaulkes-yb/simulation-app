@@ -10,11 +10,13 @@ import org.springframework.stereotype.Service;
 
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.WorkloadDesc;
+import com.yugabyte.simulation.workload.LoggingFileManager;
 import com.yugabyte.simulation.workload.WorkloadTypeInstance;
 
 @Service
 public class TimerService {
 	
+	private LoggingFileManager loggingManager = new LoggingFileManager();
 	private class TimerImpl implements Timer {
 		private final List<SubPartTime> subPartsTimes = new ArrayList<>();
 		
@@ -168,11 +170,13 @@ public class TimerService {
 		public synchronized int addTimingWokload(WorkloadTypeInstance workload) {
 			int index = getResultIndexForName(workload.getWorkloadId());
 			workloadMap.put(workload.getWorkloadId(), workload);
+			loggingManager.createFile(workload.getWorkloadId(), workload.getCsvHeader());
 			return index;
 		}
 
 		public synchronized void removeTimingWorkload(WorkloadTypeInstance workload) {
 			workloadMap.remove(workload.getWorkloadId());
+			loggingManager.closeFile(workload.getWorkloadId());
 			int ordinal = resultsOrdinals.remove(workload.getWorkloadId());
 			resultsReverseOrdinals.remove(ordinal);
 		}
@@ -206,7 +210,8 @@ public class TimerService {
 				
 				WorkloadTypeInstance workload = workloadMap.get(workloadId);
 				if (workload != null) {
-					workload.submitTimingResult(result, MAX_RESULTS_SECONDS);
+					TimerResult newResult = workload.submitTimingResult(result, MAX_RESULTS_SECONDS);
+					loggingManager.writeLine(workload.getWorkloadId(), workload.formatToCsv(newResult));
 				}
 				if (workload.isTerminated()) {
 					removeTimingWorkload(workload);

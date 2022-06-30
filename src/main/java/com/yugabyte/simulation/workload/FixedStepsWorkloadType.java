@@ -1,5 +1,6 @@
 package com.yugabyte.simulation.workload;
 
+import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
 import com.yugabyte.simulation.services.Timer;
@@ -40,6 +41,18 @@ public class FixedStepsWorkloadType extends WorkloadType {
 		}
 	}
 	
+	public static class FixedStepsTimerResult extends TimerResult {
+		private final int currentStepNumber;
+		public FixedStepsTimerResult(TimerResult orig, int currentStepNumber) {
+			super(orig);
+			this.currentStepNumber = currentStepNumber;
+		}
+		
+		public int getCurrentStepNumber() {
+			return currentStepNumber;
+		}
+	}
+	
 
 	public class FixedStepWorkloadInstance extends WorkloadTypeInstance {
 		private final WorkloadStep[] workloadSteps;
@@ -65,6 +78,21 @@ public class FixedStepsWorkloadType extends WorkloadType {
 		@Override
 		public WorkloadType getType() {
 			return FixedStepsWorkloadType.this;
+		}
+		
+		private static final String csvHeader = "Start Time,Min Time Us,Average Time Us,Max Time Us,Num Succeeded,Num Failed,Current Step\n";
+		private static final String csvFormat = "%d,%d,%d,%d,%d,%d,%d\n";
+		
+		@Override
+		public String formatToCsv(TimerResult result) {
+			return String.format(csvFormat, result.getStartTimeMs(), result.getMinUs(), result.getAvgUs(),
+					result.getMaxUs(), result.getNumSucceeded(), result.getNumFailed(), 
+					((FixedStepsTimerResult)result).getCurrentStepNumber());
+		}
+		
+		@Override
+		public String getCsvHeader() {
+			return csvHeader;
 		}
 		
 		public WorkloadStep getCurrentStep() {
@@ -133,6 +161,10 @@ public class FixedStepsWorkloadType extends WorkloadType {
 		@Override
 		public WorkloadResult getWorkloadResult(long afterTime) {
 			return new FixedStepsWorkloadResult(afterTime, this);
+		}
+		@Override
+		protected TimerResult doAugmentTimingResult(TimerResult result) {
+			return new FixedStepsTimerResult(result, currentStepNumber);
 		}
 	}
 
