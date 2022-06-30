@@ -1,5 +1,22 @@
 <div (wheel)="onMouseWheel($event)">
-  <p-panel header="Network Diagram and Aggregate Statistics" [toggleable]="true" [collapsed]="false">
+  <p-panel header="Active Workloads" [toggleable]="true" [collapsed]="false">
+    <div *ngFor="let panel of activeWorkloads">
+      <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false">
+        <div *ngIf="currentData[panel].workloadTypeName == 'THROUGHPUT'">
+          <app-throughput-workload [duration]="duration" [workloadId]="currentData[panel].workloadId" [data]="currentData[panel]"></app-throughput-workload>
+        </div>
+        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_STEP'">
+          <app-fixed-step-workload [duration]="duration" [data]="currentData[panel]"></app-fixed-step-workload>
+        </div>
+        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_TARGET'">
+          <app-fixed-target-workload [duration]="duration" [workloadId]="currentData[panel].workloadId" [data]="currentData[panel]"></app-fixed-target-workload>
+        </div>
+      </p-panel>
+    </div>
+  </p-panel>
+
+  <div class="mt-2">
+    <p-panel header="Network Diagram and Aggregate Statistics" [toggleable]="true" [collapsed]="false">
       <div class="grid">
         <div class="col" style="height: 600px;">
           <div style = "width: 100%; height: 100%; background-color: black;">
@@ -17,53 +34,7 @@
           </div>
         </div>
       </div>
-  </p-panel>
-
-  <div class="mt-2">
-  <p-panel header="Active Workloads" [toggleable]="true" [collapsed]="false">
-    <div *ngFor="let panel of activeWorkloads">
-      <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false">
-        <div *ngIf="currentData[panel].workloadTypeName == 'THROUGHPUT'">
-          <app-throughput-workload [duration]="duration" [workloadId]="currentData[panel].workloadId" [data]="currentData[panel]"></app-throughput-workload>
-        </div>
-        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_STEP'">
-          <app-fixed-step-workload [duration]="duration" [data]="currentData[panel]"></app-fixed-step-workload>
-        </div>
-        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_TARGET'">
-          <app-fixed-target-workload [duration]="duration" [workloadId]="currentData[panel].workloadId" [data]="currentData[panel]"></app-fixed-target-workload>
-        </div>
-      </p-panel>
-    </div>
-    <!--
-    <p-panel header="Management Workload" [toggleable]="true" [collapsed]="false">
-      <ng-template pTemplate="icons">
-        <button pButton class="p-panel-header-icon p-link" (click)="menu.toggle($event)">
-          <span class="pi pi-cog"></span>
-        </button>
-        <p-menu #menu id="config_menu" [model]="items" [popup]="true"></p-menu>
-      </ng-template>
-      <div class="grid">
-        <div class="col" style="height: 300px;">
-          <div style = "width: 100%; height: 100%; background-color: black;">
-            <app-statistics-graph style="width: 100%" [idName]="'workload1Latency'" [timingData]="currentData" [duration]="duration" [timingType]="LATENCY" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Latency"></app-statistics-graph> 
-          </div>
-        </div>
-        <div class="col" style="height: 300px;">
-          <div style = "width: 100%; height: 100%; background-color: black;">
-            <app-statistics-graph [idName]="'workload1Throughput'" [timingData]="currentData" [duration]="duration" [timingType]="THROUGHPUT" [timingMetric]="WORKLOAD1" [timingMetricName]="workload1Throughput"></app-statistics-graph>
-          </div>
-        </div>
-      </div>
-      <div class="grid">
-        <div class="col" style="height: 10rem;">
-          <div style = "width: 100%; height: 100%; background-color: black;">
-            <app-steps-diagram style="width: 100%" [steps]="steps" [index]="stepIndex"></app-steps-diagram>
-          </div>
-        </div>
-      </div>
     </p-panel>
-    -->
-  </p-panel>
   </div>
 </div>
 <div style="position: absolute; top: 25px; left: 10px; width: 20px; height: 20px; cursor: pointer;" (click)="displayDialog()">

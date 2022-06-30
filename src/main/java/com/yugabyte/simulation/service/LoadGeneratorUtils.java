@@ -18,12 +18,32 @@ public class LoadGeneratorUtils {
 		return NameGenerator.getName();
 	}
 	
+	public static String getText(int minLength, int maxLength) {
+		return TextGenerator.getText(minLength, maxLength);
+	}
+	
 	public static int getInt(int min, int max) {
 		if (min >= max) {
 			return min;
 		}
 		Random random = ThreadLocalRandom.current();
 		return min + random.nextInt(max - min);
+	}
+
+	public static double getDouble() {
+		return ThreadLocalRandom.current().nextDouble();
+	}
+	
+	public static double getDouble(double min, double max) {
+		return ThreadLocalRandom.current().nextDouble(min, max);
+	}
+	
+	public static long getLong(long min, long max) {
+		if (min >= max) {
+			return min;
+		}
+		Random random = ThreadLocalRandom.current();
+		return min + (random.nextLong() % (max-min));
 	}
 
 	public static String getFixedLengthNumber(int length) {

@@ -34,12 +34,17 @@ public class LoggingFileManager {
 		}
 	}
 	
+	private int counter = 0;
 	public void writeLine(String id, String line) {
 		BufferedWriter writer = openFiles.get(id);
 		if (writer != null) {
 			try {
 				writer.write(line);
-				writer.flush();
+				// Flush the aggregate counter every 10s, the others will auto flush when done.
+				if (id.indexOf(' ') > 0 && (++counter) % 10 == 0) {
+					writer.flush();
+				}
+				
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}

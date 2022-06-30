@@ -2,9 +2,12 @@ package com.yugabyte.simulation.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,8 +25,8 @@ import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
-//@Repository
-public class SimpleSelectWorkload extends WorkloadSimulationBase implements WorkloadSimulation {
+@Repository
+public class CapitalGroupWorkload extends WorkloadSimulationBase implements WorkloadSimulation {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -35,21 +38,50 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 	private WorkloadManager workloadManager;
 	
 	private static final String CREATE_TABLE =
-			"create table if not exists vulgar_words ("
-			+ "id uuid not null, "
-			+ "created timestamp not null default now(), "
-			+ "word_name varchar(30) not null, "
-			+ "active_ind boolean not null default true,"
-			+ "constraint vulgar_words_pk primary key (id)"
-			+ ") split into 1 tablets;";
+			"create table if not exists cached_data ("
+			+ "id uuid not null,"
+			+ "created timestamp not null default now(),"
+			+ "updated timestamp not null default now(),"
+			+ "int1 int,"
+			+ "int2 int,"
+			+ "int3 int,"
+			+ "int4 int,"
+			+ "int5 int,"
+			+ "bigint1 bigint,"
+			+ "bigint2 bigint,"
+			+ "bigint3 bigint,"
+			+ "bigint4 bigint,"
+			+ "bigint5 bigint,"
+			+ "decimal1 decimal,"
+			+ "decimal2 decimal,"
+			+ "decimal3 decimal,"
+			+ "decimal4 decimal,"
+			+ "decimal5 decimal,"
+			+ "text1 varchar(500),"
+			+ "text2 varchar(500),"
+			+ "text3 varchar(500),"
+			+ "text4 varchar(500),"
+			+ "text5 varchar(500),"
+			+ "text6 varchar(500),"
+			+ "constraint cached_data_pk primary key (id)"
+			+ ")";
 			
-	private final String DROP_TABLE = "drop table if exists vulgar_words;";
+	private final String DROP_TABLE = "drop table if exists cached_data;";
 
-	private final String INSERT_RECORD = "insert into vulgar_words("
-			+ "id, word_name, active_ind)"
-			+ " values (?, ?, ?);";
+	private final String INSERT_RECORD = "insert into cached_data("
+			+ "id, int1, int2, int3, int4, int5,"
+			+ "bigint1, bigint2, bigint3, bigint4, bigint5,"
+			+ "decimal1, decimal2, decimal3, decimal4, decimal5,"
+			+ "text1, text2, text3, text4, text5, text6)"
+			+ " values (?, ?, ?, ?, ?, ?,"
+			+ "?,?,?,?,?,"
+			+ "?,?,?,?,?,"
+			+ "?,?,?,?,?,?"
+			+ ");";
 	
-	private final String QUERY = "select * from vulgar_words where active_ind = true;";
+	private final String POINT_QUERY = "select * from cached_data where id = ?::uuid;";
+	
+	private static final int ROWS_TO_PRELOAD = 10000;
 	
 	private enum WorkloadType {
 		CREATE_TABLES, 
@@ -57,24 +89,14 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 		RUN_SIMULATION,
 	}		
 	
-//	private static final String DROP_TABLE_STEP = "Drop Table";
-//	private static final String CREATE_TABLE_STEP = "Create Table";
-
 	private final FixedStepsWorkloadType createTablesWorkloadType;
 	private final FixedTargetWorkloadType seedingWorkloadType;
 	private final ThroughputWorkloadType runInstanceType;
 	
-	public SimpleSelectWorkload() {
-//		this.createTablesWorkloadType = new FixedStepsWorkloadType(
-//				DROP_TABLE_STEP,
-//				CREATE_TABLE_STEP);
-		
+	public CapitalGroupWorkload() {
 		this.createTablesWorkloadType = new FixedStepsWorkloadType(
-				new FixedStepsWorkloadType.Step("Pause 1", (a,b) -> { try { Thread.sleep(5000);} catch (Exception e) {} }),
 				new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),
-				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(2000);} catch (Exception e) {} }),
-				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),
-				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(3000);} catch (Exception e) {} })
+				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE))
 		);
 				
 		this.seedingWorkloadType = new FixedTargetWorkloadType();
@@ -137,19 +159,6 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 	}
 
 	private void createTables() {
-//		FixedStepsWorkloadType jobType = createTablesWorkloadType;
-//		FixedStepWorkloadInstance workload = jobType.createInstance(timerService);
-//		workloadManager.registerWorkloadInstance(workload);
-//		workload.execute((stepNum, stepName) -> {
-//			switch (stepName) {
-//			case DROP_TABLE_STEP:
-//				jdbcTemplate.execute(DROP_TABLE);
-//				break;
-//			case CREATE_TABLE_STEP:
-//				jdbcTemplate.execute(CREATE_TABLE);
-//				break;
-//			}
-//		});
 		createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
 	}
 	
@@ -157,31 +166,80 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 		seedingWorkloadType
 			.createInstance(timerService, workloadManager)
 			.execute(threads, numberToGenerate, (customData, threadData) -> {
-				UUID uuid = LoadGeneratorUtils.getUUID();
-				String name = LoadGeneratorUtils.getName();
-				boolean active = LoadGeneratorUtils.getInt(0, 100000) == 0;
+				jdbcTemplate.update(INSERT_RECORD,
+						LoadGeneratorUtils.getUUID(),
+
+						LoadGeneratorUtils.getInt(0, 100),
+						LoadGeneratorUtils.getInt(20, 300),
+						LoadGeneratorUtils.getInt(100, 1000),
+						LoadGeneratorUtils.getInt(0, 1000),
+						LoadGeneratorUtils.getInt(500, 10000000),
 				
-				jdbcTemplate.update(INSERT_RECORD, uuid, name, active);
+						LoadGeneratorUtils.getLong(1000000000L, 100000000000L),
+						LoadGeneratorUtils.getLong(1000000000L, 100000000000L),
+						LoadGeneratorUtils.getLong(1000000000L, 100000000000L),
+						LoadGeneratorUtils.getLong(1000000000L, 100000000000L),
+						LoadGeneratorUtils.getLong(1000000000L, 100000000000L),
+						
+						LoadGeneratorUtils.getDouble(),
+						LoadGeneratorUtils.getDouble(),
+						LoadGeneratorUtils.getDouble(),
+						LoadGeneratorUtils.getDouble(1000.0, 10000000.0),
+						LoadGeneratorUtils.getDouble(-5, 5),
+
+						LoadGeneratorUtils.getText(200, 490),
+						LoadGeneratorUtils.getText(200, 490),
+						LoadGeneratorUtils.getText(200, 490),
+						LoadGeneratorUtils.getText(200, 490),
+						LoadGeneratorUtils.getText(200, 490),
+						LoadGeneratorUtils.getText(200, 490)
+					);
+				
 				return threadData;
 			});
 	}
+	
+	private List<UUID> getQueryList() {
+		List<UUID> results = new ArrayList<UUID>(ROWS_TO_PRELOAD);
+		jdbcTemplate.setMaxRows(ROWS_TO_PRELOAD);
+		jdbcTemplate.setFetchSize(ROWS_TO_PRELOAD);
+		jdbcTemplate.query("select id from cached_data limit " + ROWS_TO_PRELOAD,
+			new RowCallbackHandler() {
+			
+				@Override
+				public void processRow(ResultSet rs) throws SQLException {
+					UUID value = (UUID)rs.getObject(1);
+					results.add(value);
+				}
+		});
+		return results;
+	}
+
 
 	private void runSimulation(int tps, int maxThreads) {
+		System.out.println("**** Preloading data...");
+		final List<UUID> uuids = getQueryList();
+		System.out.println("**** Preloading complete...");
+
+		Random random = ThreadLocalRandom.current();
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
 			.createInstance(timerService, workloadManager)
 			.setMaxThreads(maxThreads)
 			.execute(tps, (customData, threadData) -> {
-				String query = QUERY;
-				jdbcTemplate.query(query,
+				String query = POINT_QUERY;
+				UUID id = uuids.get(random.nextInt(uuids.size()));
+				jdbcTemplate.query(query, new Object[] {id}, new int[] {java.sql.Types.VARCHAR},
 					new RowCallbackHandler() {
 						@Override
 						public void processRow(ResultSet rs) throws SQLException {
+							/*
 							System.out.printf("id=%s, word='%s', active=%b\n", 
 									rs.getString("id"),
 									rs.getString("word_name"),
 									rs.getInt("active_ind"));
+							*/
 						}
 					});
 			});
