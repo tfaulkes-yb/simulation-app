@@ -72,7 +72,7 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 		this.createTablesWorkloadType = new FixedStepsWorkloadType(
 				new FixedStepsWorkloadType.Step("Pause 1", (a,b) -> { try { Thread.sleep(5000);} catch (Exception e) {} }),
 				new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),
-				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(20000);} catch (Exception e) {} }),
+				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(2000);} catch (Exception e) {} }),
 				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),
 				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(3000);} catch (Exception e) {} })
 		);
