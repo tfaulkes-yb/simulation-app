@@ -25,6 +25,8 @@ import { WorkloadService } from './services/workload-service.service';
 import { StepsDiagramComponent } from './components/steps-diagram/steps-diagram.component';
 import { RouterModule } from '@angular/router';
 import { FixedStepWorkloadComponent } from './components/fixed-step-workload/fixed-step-workload.component';
+import { ThroughputWorkloadComponent } from './components/throughput-workload/throughput-workload.component';
+import { FixedTargetWorkloadComponent } from './components/fixed-target-workload/fixed-target-workload.component';
 
 @NgModule({
   declarations: [
@@ -34,6 +36,8 @@ import { FixedStepWorkloadComponent } from './components/fixed-step-workload/fix
     NetworkDiagramComponent,
     StepsDiagramComponent,
     FixedStepWorkloadComponent,
+    ThroughputWorkloadComponent,
+    FixedTargetWorkloadComponent,
   ],
   imports: [
     AccordionModule,

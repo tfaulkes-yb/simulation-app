@@ -17,15 +17,12 @@ export class FixedStepWorkloadComponent implements OnInit, OnChanges {
   constructor() { }
 
   ngOnInit(): void {
-    console.log(this.data.steps);
     for (const thisStep of this.data.steps) {
       this.steps.push({label: thisStep.name});
     }
-    this.stepIndex = 0;
   }
 
   ngOnChanges(changes : SimpleChanges) {
-    console.log(changes);
     this.stepIndex = this.data.currentStepNumber;
   }
 

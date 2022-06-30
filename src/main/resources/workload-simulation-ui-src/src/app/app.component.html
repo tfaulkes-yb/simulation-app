@@ -23,11 +23,15 @@
   <p-panel header="Active Workloads" [toggleable]="true" [collapsed]="false">
     <div *ngFor="let panel of activeWorkloads">
       <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false">
-        <div *ngIf="currentData[panel].workloadTypeName == 'THROUGHPUT'"> Throughput</div>
+        <div *ngIf="currentData[panel].workloadTypeName == 'THROUGHPUT'">
+          <app-throughput-workload [workloadId]="currentData[panel].workloadId" [data]="currentData[panel]"></app-throughput-workload>
+        </div>
         <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_STEP'">
           <app-fixed-step-workload [data]="currentData[panel]"></app-fixed-step-workload>
         </div>
-        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_TARGET'"> Fixed</div>
+        <div *ngIf="currentData[panel].workloadTypeName == 'FIXED_TARGET'">
+          <app-fixed-target-workload [workloadId]="currentData[panel].workloadId" [data]="currentData[panel]"></app-fixed-target-workload>
+        </div>
       </p-panel>
     </div>
     <!--
