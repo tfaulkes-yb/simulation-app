@@ -27,7 +27,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 	}
 	
 
-	private static class WorkerThread implements Runnable {
+	private class WorkerThread implements Runnable {
 		private final ExecuteTask task;
 		private final AtomicBoolean terminate;
 		private final Object customData;
@@ -37,8 +37,11 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private final AtomicLong startedCounter;
 		private final long target;
 		private final int workloadOrdinal;
+		private final FixedTargetWorkloadInstance instance;
 
-		public WorkerThread(int threadId, AtomicBoolean terminate, AtomicLong completedCounter, AtomicLong startedCounter, long target, Object customData, TimerService timerService, ExecuteTask task,int workloadOrdinal) {
+		public WorkerThread(int threadId, AtomicBoolean terminate, AtomicLong completedCounter, 
+				AtomicLong startedCounter, long target, Object customData, TimerService timerService, 
+				ExecuteTask task,int workloadOrdinal, FixedTargetWorkloadInstance fixedInstance) {
 			this.terminate = terminate;
 			this.customData = customData;
 			this.threadData = null;
@@ -48,6 +51,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 			this.startedCounter = startedCounter;
 			this.target = target;
 			this.workloadOrdinal = workloadOrdinal;
+			this.instance = fixedInstance;
 		}
 		
 		@Override
@@ -63,6 +67,16 @@ public class FixedTargetWorkloadType extends WorkloadType {
 					// TODO Log exception?
 				}
 				this.completedCounter.incrementAndGet();
+			}
+			if (!terminate.get()) {
+				synchronized (terminate) {
+					if (!terminate.get()) {
+						// have to do this is a separate thread otherwise
+						// we will deadlock as terminate() will wait for 
+						// this thread to terminate.
+						new Thread( ()-> instance.terminate()).start();
+					}
+				}
 			}
 		}
 	}
@@ -138,10 +152,11 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		}
 
 		public void execute(int numThreads, int target, ExecuteTask runner) {
+			this.target = target;
 			this.executor = Executors.newFixedThreadPool(numThreads);
 			this.startTime = System.currentTimeMillis();
 			for (int i = 0; i < numThreads; i++) {
-				WorkerThread worker = new WorkerThread(i, terminate, completedCounter, startedCounter, target, customData, getTimerService(), runner, this.getWorkloadOrdinal());
+				WorkerThread worker = new WorkerThread(i, terminate, completedCounter, startedCounter, target, customData, getTimerService(), runner, this.getWorkloadOrdinal(), this);
 				executor.submit(worker);
 			}
 		}

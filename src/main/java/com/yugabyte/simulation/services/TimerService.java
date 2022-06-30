@@ -43,7 +43,6 @@ public class TimerService {
 		}
 	}
 
-	private final String AGGREGATE_METRIC_NAME = "__aggregate__";
 	private final int AGGREGATE_ORDINAL = 0;
 	
 //	private final Map<String, List<TimerResult>> timingResults;
@@ -208,6 +207,9 @@ public class TimerService {
 				WorkloadTypeInstance workload = workloadMap.get(workloadId);
 				if (workload != null) {
 					workload.submitTimingResult(result, MAX_RESULTS_SECONDS);
+				}
+				if (workload.isTerminated()) {
+					removeTimingWorkload(workload);
 				}
 
 			}

@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,9 +17,8 @@ import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
-import com.yugabyte.simulation.workload.FixedStepsWorkloadType.FixedStepWorkloadInstance;
+import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
 import com.yugabyte.simulation.workload.ThroughputWorkloadType;
-import com.yugabyte.simulation.workload.ThroughputWorkloadType.ThroughputWorkloadInstance;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
@@ -36,7 +36,7 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 	
 	private static final String CREATE_TABLE =
 			"create table if not exists vulgar_words ("
-			+ "id integer not null, "
+			+ "id uuid not null, "
 			+ "created timestamp not null default now(), "
 			+ "word_name varchar(30) not null, "
 			+ "active_ind boolean not null default true,"
@@ -45,10 +45,15 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 			
 	private final String DROP_TABLE = "drop table if exists vulgar_words;";
 
+	private final String INSERT_RECORD = "insert into vulgar_words("
+			+ "id, word_name, active_ind)"
+			+ " values (?, ?, ?);";
+	
 	private final String QUERY = "select * from vulgar_words where active_ind = true;";
 	
 	private enum WorkloadType {
 		CREATE_TABLES, 
+		SEED_DATA,
 		RUN_SIMULATION,
 	}		
 	
@@ -56,6 +61,7 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 //	private static final String CREATE_TABLE_STEP = "Create Table";
 
 	private final FixedStepsWorkloadType createTablesWorkloadType;
+	private final FixedTargetWorkloadType seedingWorkloadType;
 	private final ThroughputWorkloadType runInstanceType;
 	
 	public SimpleSelectWorkload() {
@@ -71,6 +77,7 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(3000);} catch (Exception e) {} })
 		);
 				
+		this.seedingWorkloadType = new FixedTargetWorkloadType();
 		this.runInstanceType = new ThroughputWorkloadType();
 	}
 	
@@ -80,6 +87,14 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 			"Create the table. If the table already exists it will be dropped"
 		);
 	
+	private WorkloadDesc seedingWorkload = new WorkloadDesc(
+			WorkloadType.SEED_DATA.toString(),
+			"Seed Data",
+			"Load data into the table",
+			new WorkloadParamDesc("Items to generate:", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("Threads", 1, 500, 32)
+		);
+			
 	private WorkloadDesc runningWorkload = new WorkloadDesc(
 			WorkloadType.RUN_SIMULATION.toString(),
 			"Simulation",
@@ -91,7 +106,7 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 	@Override
 	public List<WorkloadDesc> getWorkloads() {
 		return Arrays.asList(
-			createTablesWorkload, runningWorkload
+			createTablesWorkload, seedingWorkload, runningWorkload
 		);
 	}
 
@@ -105,6 +120,10 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 				this.createTables();
 				return new InvocationResult("Ok");
 			
+			case SEED_DATA:
+				this.seedData(values[0].getIntValue(), values[1].getIntValue());
+				return new InvocationResult("Ok");
+				
 			case RUN_SIMULATION:
 				this.runSimulation(values[0].getIntValue(), values[1].getIntValue());
 				return new InvocationResult("Ok");
@@ -134,6 +153,18 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 		createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
 	}
 	
+	private void seedData(int numberToGenerate, int threads) {
+		seedingWorkloadType
+			.createInstance(timerService, workloadManager)
+			.execute(threads, numberToGenerate, (customData, threadData) -> {
+				UUID uuid = LoadGeneratorUtils.getUUID();
+				String name = LoadGeneratorUtils.getName();
+				boolean active = LoadGeneratorUtils.getInt(0, 100000) == 0;
+				
+				jdbcTemplate.update(INSERT_RECORD, uuid, name, active);
+				return threadData;
+			});
+	}
 
 	private void runSimulation(int tps, int maxThreads) {
 		jdbcTemplate.setFetchSize(1000);
