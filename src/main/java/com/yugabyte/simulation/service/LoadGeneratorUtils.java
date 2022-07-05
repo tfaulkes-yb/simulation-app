@@ -66,4 +66,14 @@ public class LoadGeneratorUtils {
 		}
 		return buffer.toString();
 	}
+
+	public static byte[] getBinaryDataOfFixedSize(int sizeInBytes){
+		if(sizeInBytes <= 0){
+			return null;
+		}
+		byte[] bytes = new byte[sizeInBytes];
+		Random random = ThreadLocalRandom.current();
+		random.nextBytes(bytes);
+		return bytes;
+	}
 }

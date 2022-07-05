@@ -36,7 +36,7 @@ import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
-//@Repository
+@Repository
 public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSimulation {
 
 	@Autowired

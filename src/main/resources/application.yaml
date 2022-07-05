@@ -1,4 +1,5 @@
 spring:
+  workload: ${workload:teslaWorkload}
   jpa:
     open-in-view: false
   flyway:

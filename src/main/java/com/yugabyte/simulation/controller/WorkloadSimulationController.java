@@ -25,6 +25,8 @@ import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadTypeInstance;
 
+import javax.annotation.Resource;
+
 @RestController
 @RequestMapping("/api")
 public class WorkloadSimulationController {
@@ -36,6 +38,8 @@ public class WorkloadSimulationController {
     
     // Generic interface, to be populated with class loaded dynamically?
     @Autowired
+    @Resource(name="${spring.workload:sonosWorkload}")
+    // we can use @Qualifier as well
     private WorkloadSimulation workloadSimulation;
     
     @GetMapping("get-workloads")
