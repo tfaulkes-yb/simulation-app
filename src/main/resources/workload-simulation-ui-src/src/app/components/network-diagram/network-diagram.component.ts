@@ -53,14 +53,16 @@ export class NetworkDiagramComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(){
-    this.width = this.network.nativeElement.offsetWidth;
-    this.height = this.network.nativeElement.offsetHeight;
-    console.log(this.width, this.height);
+    setTimeout( () =>  {
+      this.width = this.network.nativeElement.offsetWidth;
+      this.height = this.network.nativeElement.offsetHeight;
+      console.log(this.width, this.height);
 
-    this.createSvg();
-    setInterval(() => {
-      this.ybServer.getServerNodes().subscribe(nodes => this.update(nodes));
-    },1000);
+      this.createSvg();
+      setInterval(() => {
+        this.ybServer.getServerNodes().subscribe(nodes => this.update(nodes));
+      },1000);
+    }, 1150);
   }
   
   private createSvg() : void {

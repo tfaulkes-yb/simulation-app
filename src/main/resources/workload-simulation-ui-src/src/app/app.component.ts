@@ -43,6 +43,9 @@ export class AppComponent implements AfterViewInit, OnInit {
   LATENCY = "LATENCY";
   THROUGHPUT = "THROUGHPUT";
 
+  doLogging = false;
+  loggingDir = "/tmp";
+
   workload1Latency = "Workload 1";
   workload2Latency = "Workload 2";
   workload1Throughput = "Workload 1";
@@ -122,6 +125,13 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
   delete() {
     console.log("delete");
+  }
+  
+  saveSystemSettings() {
+    console.log("save");
+    this.dataSource.saveSystemPreferences(this.doLogging, this.loggingDir).subscribe(result => {
+      this.status = "System Preferences Saved";
+    });
   }
 
   computeWorkloadValues(workloads : WorkloadDesc[]) {

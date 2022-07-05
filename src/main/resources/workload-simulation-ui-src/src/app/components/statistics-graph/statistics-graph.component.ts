@@ -52,6 +52,7 @@ export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChange
   timingData : any = {};
 
   // The sub-part of the timingData which this graph should look at.
+  // TODO: this is not used and should be removed.
   @Input()
   timingMetric = "WORKLOAD";
 
@@ -74,19 +75,25 @@ export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChange
   }
 
   ngAfterViewInit(){
-    this.width = this.throughput.nativeElement.offsetWidth;
-    this.height = this.throughput.nativeElement.offsetHeight;
-    console.log(this.width, this.height);
+    let interval = this.timingMetricName === 'Aggregation Counter' ? 1200 : 0;
+    setTimeout( () => {
+      this.width = this.throughput.nativeElement.offsetWidth;
+      this.height = this.throughput.nativeElement.offsetHeight;
+      console.log(this.width, this.height);
+      console.log(window.devicePixelRatio);
+      console.log(this.throughput.nativeElement.clientWidth);
+      console.log(this.throughput.nativeElement.scrollWidth);
 
-    if (this.timingType == "LATENCY") {
-      this.visibilities[LineType.MAX] = false;
-    }
-    this.createSvg();
-    this.defineHeading();
-    this.defineLabels();
-    this.defineAxes();
-    this.update();
-    this.defineLegend();
+      if (this.timingType == "LATENCY") {
+        this.visibilities[LineType.MAX] = false;
+      }
+      this.createSvg();
+      this.defineHeading();
+      this.defineLabels();
+      this.defineAxes();
+      this.update();
+      this.defineLegend();
+    }, interval);
   }
 
   ngOnChanges(changes : SimpleChanges) {
@@ -111,7 +118,12 @@ export class StatisticsGraphComponent implements OnInit, AfterViewInit, OnChange
   }
 
   private getHeadingString() : string {
-    return (this.timingType == "LATENCY" ? "Latency " : "Throughput ") + "(" + this.timingMetricName + ")";
+    if (this.timingMetricName) {
+      return (this.timingType == "LATENCY" ? "Latency " : "Throughput ") + "(" + this.timingMetricName + ")";
+    }
+    else {
+      return (this.timingType == "LATENCY" ? "Latency " : "Throughput ");
+    }
   }
 
   private defineHeading() {

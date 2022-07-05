@@ -15,21 +15,24 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
+import com.yugabyte.simulation.dao.SystemPreferences;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.dao.WorkloadStatus;
 import com.yugabyte.simulation.service.WorkloadSimulation;
+import com.yugabyte.simulation.services.LoggingFileManager;
+import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadTypeInstance;
 
 @RestController
 @RequestMapping("/api")
 public class WorkloadSimulationController {
-//    @Autowired
-//    private WorkloadSimulationDAO workloadSimulationDAO;
-
     @Autowired
     private WorkloadManager workloadManager;
+
+    @Autowired
+    private LoggingFileManager loggingManager;
     
     // Generic interface, to be populated with class loaded dynamically?
     @Autowired
@@ -53,13 +56,21 @@ public class WorkloadSimulationController {
     	for (WorkloadTypeInstance instance : activeWorkloads) {
     		if (instance.getType().canBeTerminated()) {
     			statuses.add(instance.getWorkloadResult(Long.MAX_VALUE));
-//	    		statuses.add(new WorkloadStatus(instance.getWorkloadId(), instance.getStartTime(), instance.getEndTime(), 
-//	    				instance.getStatus().toString()));
     		}
     	}
     	return statuses;
     }
+
+    @PostMapping("save-system-preferences")
+    @ResponseBody
+    public InvocationResult terminateWorkload(@RequestBody SystemPreferences preferences) {
+    	System.out.println(preferences.getLoggingDir());
+    	System.out.println(preferences.isDoLogging());
+    	loggingManager.updateLoggingPreferences(preferences.isDoLogging(), preferences.getLoggingDir());
+    	return new InvocationResult("Ok");
+    }
     
+
     @GetMapping("terminate-workload/{workloadId}")
     public InvocationResult terminateWorkload(@PathVariable String workloadId) {
     	workloadManager.terminateWorkload(workloadId);

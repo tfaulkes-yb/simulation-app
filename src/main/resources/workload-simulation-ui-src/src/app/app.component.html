@@ -49,6 +49,27 @@
       [draggable]="true" [resizable]="true" [closable]="true" [focusOnShow]="true" [maximizable]="true" (onHide)="closeDialog()">
 
   <p-tabView *ngIf="valuesComputed" (onChange)="handleChange($event)">
+    <p-tabPanel header="System Preferences">
+      <div class="grid">
+        <div class="col-2" style="text-align:right;">
+          <label for="doLogging">Log results:</label>
+        </div>
+        <div class="col-10">
+          <p-inputSwitch id="doLogging" [(ngModel)]="doLogging"></p-inputSwitch>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="col-2" style="text-align: right;">
+          <label for="loggingDir">Log Directory:</label>
+        </div>
+        <div class="col-10">
+          <input id="loggingDir" [disabled]="!doLogging" pInputText style="width:100%" name="loggingDir" [(ngModel)]="loggingDir">
+        </div>
+      </div>
+      <div class="mt-3">
+        <p-button icon="fa-solid fa-save" (click)="saveSystemSettings()" label="Save"></p-button>
+      </div>
+    </p-tabPanel>
     <p-tabPanel header="Usable Operations" leftIcon="fa-solid fa-table">
       <p-accordion>
         <ng-container *ngFor="let workload of getWorkloads(); let i = index">

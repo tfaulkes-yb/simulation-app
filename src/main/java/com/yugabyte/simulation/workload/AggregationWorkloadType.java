@@ -6,6 +6,10 @@ import com.yugabyte.simulation.services.TimerService;
 
 public final class AggregationWorkloadType extends WorkloadType {
 
+	public static final String AGGREGATION_WORKLOAD_NAME = "Aggregation Counter";
+	public static final String csvHeader = "Start Time,Min Time Us,Average Time Us,Max Time Us,Num Succeeded,Num Failed\n";
+	private static final String csvFormat = "%d,%d,%d,%d,%d,%d\n";
+	
 	private static final AggregationWorkloadInstanceType instance = null; 
 	private final class AggregationWorkloadInstanceType extends WorkloadTypeInstance {
 
@@ -32,9 +36,6 @@ public final class AggregationWorkloadType extends WorkloadType {
 			return false;
 		}
 		
-		private static final String csvHeader = "Start Time,Min Time Us,Average Time Us,Max Time Us,Num Succeeded,Num Failed\n";
-		private static final String csvFormat = "%d,%d,%d,%d,%d,%d\n";
-		
 		@Override
 		public String formatToCsv(TimerResult result) {
 			return String.format(csvFormat, result.getStartTimeMs(), result.getMinUs(), result.getAvgUs(),
@@ -49,7 +50,7 @@ public final class AggregationWorkloadType extends WorkloadType {
 	
 	@Override
 	public String getTypeName() {
-		return "Aggregation Counter";
+		return AGGREGATION_WORKLOAD_NAME;
 	}
 
 	@Override

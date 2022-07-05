@@ -1,22 +1,22 @@
 package com.yugabyte.simulation.services;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.yugabyte.simulation.dao.TimerResult;
-import com.yugabyte.simulation.dao.WorkloadDesc;
-import com.yugabyte.simulation.workload.LoggingFileManager;
 import com.yugabyte.simulation.workload.WorkloadTypeInstance;
 
 @Service
 public class TimerService {
 	
-	private LoggingFileManager loggingManager = new LoggingFileManager();
+	@Autowired
+	private LoggingFileManager loggingManager;
+	
 	private class TimerImpl implements Timer {
 		private final List<SubPartTime> subPartsTimes = new ArrayList<>();
 		

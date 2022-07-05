@@ -8,6 +8,7 @@ import { ParamValue } from '../model/param-value.model';
 import { InvocationResult } from '../model/invocation-result.model';
 import { WorkloadStatus } from '../model/workload-status.model';
 import { WorkloadResult } from '../model/workload-result.model';
+import { SystemPreferences } from '../model/system-preferences.model';
 
 const PROTOCOL = 'http';
 const PORT = 8080;
@@ -78,5 +79,10 @@ export class YugabyteDataSourceService {
 
   terminateWorkload(workloadId : string) {
     return this.http.get<InvocationResult>(this.baseUrl+'api/terminate-workload/' + workloadId);
+  }
+
+  saveSystemPreferences(doLogging : boolean, loggingDir : string) {
+    let params : SystemPreferences = {doLogging : doLogging, loggingDir: loggingDir};
+    return this.http.post<InvocationResult>(this.baseUrl+'api/save-system-preferences', params);
   }
 }
