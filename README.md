@@ -18,12 +18,23 @@ java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-s
 -Dsslrootcert=<certificatepath> 
 ```
 
-### Running the app from Docker image
+### Running the app from Docker image (Intuit Demo)
 ```
 docker pull yugabytedb/yb-workload-simu-app
 ```
 ```
 sudo docker run -p 8080:8080 -e "JAVA_OPTS=-Dnode=<database-host-name> -Duser=<userid> -Dpassword=<password>" docker.io/yugabytedb/yb-workload-simu-app
+```
+``` 
+Addition JAVA_OPTS parameters: max-pool-size, dbname, port
+```
+
+### Running the app from Docker image (Sonos Demo)
+```
+docker pull akscjo/yb-workload-simu-app-so
+```
+```
+sudo docker run -p 8080:8080 -e "JAVA_OPTS=-Dnode=<database-host-name> -Duser=<userid> -Dpassword=<password>" docker.io/akscjo/yb-workload-simu-app-so
 ```
 ``` 
 Addition JAVA_OPTS parameters: max-pool-size, dbname, port
