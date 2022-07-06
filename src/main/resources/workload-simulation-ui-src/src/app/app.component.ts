@@ -127,8 +127,12 @@ export class AppComponent implements AfterViewInit, OnInit {
     console.log("update");
     let control = evt.originalEvent.srcElement.closest('.workload-inst');
     let classes = control.classList;
-    // for (thisClass in )
-    console.log(classes);
+    for (const thisClass of classes) {
+      if (thisClass.match(/^[A-Z]+_\d+$/)) {
+        this.terminateTask(thisClass);
+        return;
+      }
+    }
   }
   delete() {
     console.log("delete");
