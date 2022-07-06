@@ -112,7 +112,7 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
     private WorkloadDesc seedingWorkload = new WorkloadDesc(
             TeslaWorkload.WorkloadType.SEED_DATA.toString(),
             "Seed Data",
-            "Load data into the table",
+            "Load data into the 3 tables (Latency on charts will show cumulative value for 3 inserts)",
             new WorkloadParamDesc("Items to generate:", 1, Integer.MAX_VALUE, 1000),
             new WorkloadParamDesc("Threads", 1, 500, 32)
     );
@@ -120,10 +120,10 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
     private WorkloadDesc runningWorkload = new WorkloadDesc(
             TeslaWorkload.WorkloadType.RUN_SIMULATION.toString(),
             "Simulation",
-            "Run a simulation of a reads from 3 tables",
+            "Run a simulation of a reads from 3 tables (Latency on charts will show cumulative value for 3 selects and 3 inserts)",
             new WorkloadParamDesc("Throughput (tps)", 1, 1000000, 500),
             new WorkloadParamDesc("Max Threads", 1, 500, 64),
-            new WorkloadParamDesc("Include new Inserts", false)
+            new WorkloadParamDesc("Include new Inserts (to 3 tables)", false)
     );
 
     @Override
