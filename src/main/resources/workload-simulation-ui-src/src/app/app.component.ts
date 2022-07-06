@@ -10,6 +10,7 @@ import { InvocationResult } from './model/invocation-result.model';
 import { WorkloadStatus } from './model/workload-status.model';
 import { MenuItem } from 'primeng/api';
 import { WorkloadResult } from './model/workload-result.model';
+import { SystemPreferences } from './model/system-preferences.model';
 
 @Component({
   selector: 'app-root',
@@ -43,8 +44,8 @@ export class AppComponent implements AfterViewInit, OnInit {
   LATENCY = "LATENCY";
   THROUGHPUT = "THROUGHPUT";
 
-  doLogging = false;
-  loggingDir = "/tmp";
+  systemPreferences : SystemPreferences = {doLogging: false, loggingDir : '/tmp', workloadName: '', graphRefreshMs: 350, networkRefreshMs: 1000};
+  editingSystemPreferences : SystemPreferences = {...this.systemPreferences};
 
   workload1Latency = "Workload 1";
   workload2Latency = "Workload 2";
@@ -60,6 +61,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   commsErrorDialog : boolean = false;
   commsErrorCount : number = 0;
+  timer : any;
 
   steps : MenuItem[] = [
     {label: 'Dropping Topology (3m 27s)'},
@@ -75,11 +77,12 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   constructor(private dataSource : YugabyteDataSourceService,
             private workloadService : WorkloadService ) {
-    setInterval(() => {
+    this.timer = setInterval(() => {
       this.getResults();
     },340);
 
     workloadService.getWorkloadObservable().subscribe( data => this.computeWorkloadValues(data));
+    this.getSystemPreferences();
   }
 
   ngOnInit() {
@@ -93,13 +96,13 @@ export class AppComponent implements AfterViewInit, OnInit {
                   this.stopWorkload(evt);
               }
           },
-          {
-              label: 'Export Statistics',
-              icon: 'pi pi-times',
-              command: () => {
-                  this.delete();
-              }
-          }
+          // {
+          //     label: 'Export Statistics',
+          //     icon: 'pi pi-times',
+          //     command: () => {
+          //         this.delete();
+          //     }
+          // }
       ]},
       // {
       //     label: 'Navigate',
@@ -122,15 +125,32 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   stopWorkload(evt :any) {
     console.log("update");
+    let control = evt.originalEvent.srcElement.closest('.workload-inst');
+    let classes = control.classList;
+    // for (thisClass in )
+    console.log(classes);
   }
   delete() {
     console.log("delete");
   }
   
+  private setSystemPreferences(preferences : SystemPreferences) {
+    this.systemPreferences = preferences;
+    clearInterval(this.timer);
+    this.timer = setInterval(() => {
+      this.getResults();
+    }, preferences.graphRefreshMs);
+  }
+
+  getSystemPreferences() {
+    this.dataSource.getSystemPreferences().subscribe(result => {
+      this.setSystemPreferences(result);
+    })
+  }
   saveSystemSettings() {
-    console.log("save");
-    this.dataSource.saveSystemPreferences(this.doLogging, this.loggingDir).subscribe(result => {
+    this.dataSource.saveSystemPreferences(this.editingSystemPreferences).subscribe(result => {
       this.status = "System Preferences Saved";
+      this.setSystemPreferences(this.editingSystemPreferences);
     });
   }
 
@@ -336,6 +356,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     //   }
     // },100);
 
+    this.editingSystemPreferences = {...this.systemPreferences};
     this.status = "";
     let count = this.getWorkloads().length;
     for (let i =0; i < count; i++) {

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { SimulationNodeDatum, ForceLink, SimulationLinkDatum } from 'd3';
 import { YBServerModel } from 'src/app/model/yb-server-model.model';
@@ -29,7 +29,7 @@ interface FullDragEvent extends DragEvent {
   styleUrls: ['./network-diagram.component.css']
 })
 
-export class NetworkDiagramComponent implements OnInit, AfterViewInit {
+export class NetworkDiagramComponent implements OnInit, AfterViewInit, OnChanges {
   private svg : any;
   private rootElement : any;
   private width = 0;
@@ -37,12 +37,16 @@ export class NetworkDiagramComponent implements OnInit, AfterViewInit {
   private simulation : any;
   private colorMap : any;
   private currentNodes : NetworkNode[] = [];
+  private timer : any;
 
   graphNodes: NetworkNode[] = [];
   graphLinks: NetworkLink[] = [];
 
   @ViewChild('network')
   network! : ElementRef;
+
+  @Input()
+  graphRefreshMs = 1000;
 
   constructor(
     private ybServer : YugabyteDataSourceService
@@ -59,10 +63,19 @@ export class NetworkDiagramComponent implements OnInit, AfterViewInit {
       console.log(this.width, this.height);
 
       this.createSvg();
-      setInterval(() => {
+      this.timer = setInterval(() => {
         this.ybServer.getServerNodes().subscribe(nodes => this.update(nodes));
-      },1000);
+      },this.graphRefreshMs);
     }, 1150);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.graphRefreshMs) {
+      clearInterval(this.timer);
+      this.timer = setInterval(() => {
+        this.ybServer.getServerNodes().subscribe(nodes => this.update(nodes));
+      },changes.graphRefreshMs.currentValue);
+    }
   }
   
   private createSvg() : void {

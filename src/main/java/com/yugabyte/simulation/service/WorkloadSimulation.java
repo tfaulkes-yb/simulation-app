@@ -9,4 +9,5 @@ import com.yugabyte.simulation.dao.WorkloadDesc;
 public interface WorkloadSimulation {
 	public List<WorkloadDesc> getWorkloads();
 	public InvocationResult invokeWorkload(String workloadId, ParamValue[] value);
+	public String getName();
 }

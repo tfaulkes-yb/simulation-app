@@ -1,7 +1,8 @@
 package com.yugabyte.simulation.workload;
 
 
-public class WorkloadSimulationBase {
+public abstract class WorkloadSimulationBase {
+
 	public static class Workload {
 		private final String workloadId;
 		private final long startTime;
@@ -21,5 +22,6 @@ public class WorkloadSimulationBase {
 		public void start() {
 			
 		}
+		
 	}
 }

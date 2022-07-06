@@ -27,6 +27,11 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
     @Autowired
     private WorkloadManager workloadManager;
 
+	@Override
+	public String getName() {
+		return "Sonos";
+	}
+
     private static final String CREATE_TABLE1 = "create table if not exists table1(\n" +
             "   pkid uuid,\n" +
             "   col1 int,\n" +

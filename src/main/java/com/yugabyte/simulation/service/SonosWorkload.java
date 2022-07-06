@@ -48,6 +48,11 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	@Autowired 
 	private WorkloadManager workloadManager;
 	
+	@Override
+	public String getName() {
+		return "Sonos";
+	}
+	
 	private static final UUID NULL_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 	private static final String CREATE_TOPOLOGY_TABLE = 
 			"create table if not exists topology (\n"

@@ -81,8 +81,11 @@ export class YugabyteDataSourceService {
     return this.http.get<InvocationResult>(this.baseUrl+'api/terminate-workload/' + workloadId);
   }
 
-  saveSystemPreferences(doLogging : boolean, loggingDir : string) {
-    let params : SystemPreferences = {doLogging : doLogging, loggingDir: loggingDir};
-    return this.http.post<InvocationResult>(this.baseUrl+'api/save-system-preferences', params);
+  saveSystemPreferences(preferences : SystemPreferences) {
+    return this.http.post<InvocationResult>(this.baseUrl+'api/save-system-preferences', preferences);
+  }
+
+  getSystemPreferences() {
+    return this.http.get<SystemPreferences>(this.baseUrl+'api/get-system-preferences');
   }
 }

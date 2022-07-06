@@ -1,7 +1,15 @@
 <div (wheel)="onMouseWheel($event)">
-  <p-panel header="Active Workloads" [toggleable]="true" [collapsed]="false">
-    <div *ngFor="let panel of activeWorkloads">
+  <p-panel [header]="'Active Workloads for ' + systemPreferences.workloadName" [toggleable]="true" [collapsed]="false">
+
+    <div *ngFor="let panel of activeWorkloads" class="workload-inst" [ngClass]="currentData[panel].workloadId">
       <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false">
+        <ng-template pTemplate="icons">
+          <button pButton class="p-panel-header-icon p-link" (click)="menu.toggle($event)">
+              <span class="pi pi-cog"></span>
+          </button>
+          <p-menu #menu id="config_menu" [model]="items" [popup]="true"></p-menu>
+        </ng-template>
+
         <div *ngIf="currentData[panel].workloadTypeName == 'THROUGHPUT'">
           <app-throughput-workload [duration]="duration" [workloadId]="currentData[panel].workloadId" [data]="currentData[panel]"></app-throughput-workload>
         </div>
@@ -20,7 +28,7 @@
       <div class="grid">
         <div class="col" style="height: 600px;">
           <div style = "width: 100%; height: 100%; background-color: black;">
-            <app-network-diagram></app-network-diagram>
+            <app-network-diagram [graphRefreshMs]="systemPreferences.graphRefreshMs"></app-network-diagram>
           </div>
         </div>
         <div class="col" style="height: 600px;">
@@ -45,25 +53,41 @@
 <p-dialog [(visible)]="commsErrorDialog" header="Communications Error" [modal]="true" [closable]="false">
   Communications with the server cannot be established. Please check network connectivity.
 </p-dialog>
-<p-dialog [(visible)]="showDialog" header="Workload Management" [modal]="true" [style]="{width: '50vw', height: '75%'}" 
+<p-dialog [(visible)]="showDialog" [header]="'Workload Management for ' + systemPreferences.workloadName" [modal]="true" [style]="{width: '50vw', height: '75%'}" 
       [draggable]="true" [resizable]="true" [closable]="true" [focusOnShow]="true" [maximizable]="true" (onHide)="closeDialog()">
 
   <p-tabView *ngIf="valuesComputed" (onChange)="handleChange($event)">
     <p-tabPanel header="System Preferences">
       <div class="grid">
-        <div class="col-2" style="text-align:right;">
+        <div class="col-4" style="text-align:right;">
           <label for="doLogging">Log results:</label>
         </div>
-        <div class="col-10">
-          <p-inputSwitch id="doLogging" [(ngModel)]="doLogging"></p-inputSwitch>
+        <div class="col-8">
+          <p-inputSwitch id="doLogging" [(ngModel)]="editingSystemPreferences.doLogging"></p-inputSwitch>
         </div>
       </div>
       <div class="grid">
-        <div class="col-2" style="text-align: right;">
+        <div class="col-4" style="text-align: right;">
           <label for="loggingDir">Log Directory:</label>
         </div>
-        <div class="col-10">
-          <input id="loggingDir" [disabled]="!doLogging" pInputText style="width:100%" name="loggingDir" [(ngModel)]="loggingDir">
+        <div class="col-8">
+          <input id="loggingDir" [disabled]="!editingSystemPreferences.doLogging" pInputText style="width:100%" name="loggingDir" [(ngModel)]="editingSystemPreferences.loggingDir">
+        </div>
+      </div>
+      <div class="grid">
+        <div class="col-4" style="text-align: right;">
+          <label for="graphRefreshMs">Graph Refresh Period (ms):</label>
+        </div>
+        <div class="col-8">
+          <p-inputNumber id="graphRefreshMs" style="width:100%" name="graphRefreshMs" [(ngModel)]="editingSystemPreferences.graphRefreshMs" [min]="10"></p-inputNumber>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="col-4" style="text-align: right;">
+          <label for="networkRefreshMs">Network Refresh Period (ms):</label>
+        </div>
+        <div class="col-8">
+          <p-inputNumber id="networkRefreshMs" pInputNumber style="width:100%" name="networkRefreshMs" [(ngModel)]="editingSystemPreferences.networkRefreshMs" [min]="10"></p-inputNumber>
         </div>
       </div>
       <div class="mt-3">

@@ -21,10 +21,13 @@ import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.dao.WorkloadStatus;
 import com.yugabyte.simulation.service.WorkloadSimulation;
 import com.yugabyte.simulation.services.LoggingFileManager;
+import com.yugabyte.simulation.services.SystemPreferencesService;
 import com.yugabyte.simulation.services.TimerService;
+import com.yugabyte.simulation.workload.AggregationWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadTypeInstance;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 @RestController
@@ -34,14 +37,19 @@ public class WorkloadSimulationController {
     private WorkloadManager workloadManager;
 
     @Autowired
-    private LoggingFileManager loggingManager;
+    private SystemPreferencesService systemPreferencesService;
     
     // Generic interface, to be populated with class loaded dynamically?
     @Autowired
     @Resource(name="${spring.workload:sonosWorkload}")
     // we can use @Qualifier as well
     private WorkloadSimulation workloadSimulation;
-    
+
+	@PostConstruct
+	private void setWorkloadName() {
+    	this.systemPreferencesService.setName(workloadSimulation.getName());
+	}
+
     @GetMapping("get-workloads")
     public List<WorkloadDesc> getWorkloads() {
     	return workloadSimulation.getWorkloads();
@@ -67,11 +75,14 @@ public class WorkloadSimulationController {
 
     @PostMapping("save-system-preferences")
     @ResponseBody
-    public InvocationResult terminateWorkload(@RequestBody SystemPreferences preferences) {
-    	System.out.println(preferences.getLoggingDir());
-    	System.out.println(preferences.isDoLogging());
-    	loggingManager.updateLoggingPreferences(preferences.isDoLogging(), preferences.getLoggingDir());
+    public InvocationResult saveSystemPreferences(@RequestBody SystemPreferences preferences) {
+    	this.systemPreferencesService.saveSystemPreferences(preferences);
     	return new InvocationResult("Ok");
+    }
+    
+    @GetMapping("get-system-preferences")
+    public SystemPreferences getSystemPreferences() {
+    	return this.systemPreferencesService.getSystemPreferences();
     }
     
 
@@ -88,155 +99,5 @@ public class WorkloadSimulationController {
     	
     	return workloadManager.getResults(afterTime);
     }
-
-    
-    /*
-    @GetMapping("/create-table")
-    public int createTable(){
-        return workloadSimulationDAO.createDBTableIfNeeded();
-    }
-
-    @GetMapping("/truncate-table")
-    public int truncateTable(){
-        return workloadSimulationDAO.truncateDBTable();
-    }
-
-    @GetMapping("/simulate-submissions/{threads}/{numberOfSubmissions}")
-    public void simulateSubmissions(@PathVariable int threads, @PathVariable int numberOfSubmissions){
-        // We need to invoke N threads.
-        try {
-            ExecutorService mExecutorService = Executors.newFixedThreadPool(threads);
-            List<Callable<Result>> mTasks = new ArrayList<Callable<Result>>();
-            long mStartTime = System.currentTimeMillis();
-            for(int i = 0; i < numberOfSubmissions; i++){
-                mTasks.add(new SimulateSubmissionsCallable());
-            }
-            List<Future<Result>> mFutures = mExecutorService.invokeAll(mTasks);
-            mExecutorService.shutdown();
-            for (Future<Result> mFuture : mFutures) {
-                Result result = mFuture.get();
-            }
-            mExecutorService.awaitTermination(120, TimeUnit.MINUTES);
-            System.out.printf("Simulation completed!\n");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @GetMapping("/simulate-status-checks/{threads}/{numberOfStatusChecks}")
-    public void simulateStatusChecks(@PathVariable int threads, @PathVariable int numberOfStatusChecks){
-        // We need to invoke N threads.
-        try {
-            ExecutorService mExecutorService = Executors.newFixedThreadPool(threads);
-            List<Callable<Result>> mTasks = new ArrayList<Callable<Result>>();
-            long mStartTime = System.currentTimeMillis();
-            for(int i = 0; i < numberOfStatusChecks; i++){
-                mTasks.add(new SimulateStatusChecksCallable());
-            }
-            List<Future<Result>> mFutures = mExecutorService.invokeAll(mTasks);
-            mExecutorService.shutdown();
-            for (Future<Result> mFuture : mFutures) {
-                Result result = mFuture.get();
-            }
-            mExecutorService.awaitTermination(120, TimeUnit.MINUTES);
-            System.out.printf("Simulation completed!\n");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-
-
-    @GetMapping("/simulate-updates/{threads}/{numberOfTimesToRerunUpdateOnSameRecord}")
-    public int simulateUpdates(@PathVariable int threads, @PathVariable int numberOfTimesToRerunUpdateOnSameRecord){
-        // We need to invoke N threads.
-        try {
-            ExecutorService mExecutorService = Executors.newFixedThreadPool(threads);
-            List<Callable<Result>> mTasks = new ArrayList<Callable<Result>>();
-            long mStartTime = System.currentTimeMillis();
-            for(int i = 0; i < threads; i++){
-                mTasks.add(new SimulateUpdatesCallable(numberOfTimesToRerunUpdateOnSameRecord));
-            }
-            List<Future<Result>> mFutures = mExecutorService.invokeAll(mTasks);
-            mExecutorService.shutdown();
-            for (Future<Result> mFuture : mFutures) {
-                Result result = mFuture.get();
-            }
-            mExecutorService.awaitTermination(120, TimeUnit.MINUTES);
-            System.out.printf("Simulation of Updates completed!\n");
-            return 0;
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-
-    // Dummy object for now - In future we can use it to get response data if needed
-    class Result {
-        public Result(){
-        }
-    }
-
-    class SimulateSubmissionsCallable implements Callable<Result> {
-        private Result result;
-
-        public SimulateSubmissionsCallable(){
-            result = new Result();
-        }
-        @Override
-        public Result call() throws Exception {
-            try {
-                workloadSimulationDAO.simulateSubmission(timerService.getTimer(TimerType.WORKLOAD1));
-                //timer.end(ExecutionStatus.SUCCESS);
-            }
-            catch (Exception e) {
-                System.out.println("@@@@@ACTEST exception:"+e.getMessage());
-            }
-            return  result;
-        }
-    }
-
-    class SimulateStatusChecksCallable implements Callable<Result> {
-        private Result result;
-        public SimulateStatusChecksCallable(){
-            result = new Result();
-        }
-        @Override
-        public Result call() throws Exception {
-            try {
-                workloadSimulationDAO.simulateStatus(timerService.getTimer(TimerType.WORKLOAD2));
-            }
-            catch (Exception e) {
-                System.out.println("@@@@@ACTEST exception:"+e.getMessage());
-            }
-            return  result;
-        }
-    }
-
-    class SimulateUpdatesCallable implements Callable<Result> {
-        private Result result;
-        private int numberOfTimesToRerunUpdateOnSameRecord;
-
-        public SimulateUpdatesCallable(int numberOfTimesToRerunUpdateOnSameRecord){
-            result = new Result();
-            this.numberOfTimesToRerunUpdateOnSameRecord = numberOfTimesToRerunUpdateOnSameRecord;
-        }
-        @Override
-        public Result call() throws Exception {
-            try {
-                workloadSimulationDAO.simulateUpdates(timerService.getTimer(TimerType.WORKLOAD1),numberOfTimesToRerunUpdateOnSameRecord);
-            }
-            catch (Exception e) {
-                System.out.println("@@@@@ACTEST exception:"+e.getMessage());
-            }
-
-            return  result;
-        }
-    }
-	*/
-
 }
 

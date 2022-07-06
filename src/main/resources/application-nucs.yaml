@@ -1,4 +1,5 @@
 spring:
+  workload: ${workload:simpleSelectWorkload}
   jpa:
     open-in-view: false
   flyway:

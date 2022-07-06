@@ -37,6 +37,11 @@ public class CapitalGroupWorkload extends WorkloadSimulationBase implements Work
 	@Autowired 
 	private WorkloadManager workloadManager;
 	
+	@Override
+	public String getName() {
+		return "Capital Group";
+	}
+
 	private static final String CREATE_TABLE =
 			"create table if not exists cached_data ("
 			+ "id uuid not null,"

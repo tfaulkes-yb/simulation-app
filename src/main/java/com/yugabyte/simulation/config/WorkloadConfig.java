@@ -1,6 +1,7 @@
 package com.yugabyte.simulation.config;
 
 import com.yugabyte.simulation.service.CapitalGroupWorkload;
+import com.yugabyte.simulation.service.SimpleSelectWorkload;
 import com.yugabyte.simulation.service.SonosWorkload;
 import com.yugabyte.simulation.service.TeslaWorkload;
 import com.yugabyte.simulation.service.WorkloadSimulation;
@@ -24,4 +25,8 @@ public class WorkloadConfig {
         return new CapitalGroupWorkload();
     }
 
+    @Bean(name="SimpleSelectWorkload")
+    public WorkloadSimulation simpleSelectWorkload(){
+        return new SimpleSelectWorkload();
+    }
 }

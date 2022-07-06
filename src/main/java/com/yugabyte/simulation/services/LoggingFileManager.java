@@ -161,4 +161,12 @@ public class LoggingFileManager {
 			this.closeAllLogs();
 		}
 	}
+	
+	public String getLoggingPath() {
+		return this.loggingPath;
+	}
+	
+	public boolean isDoLogging() {
+		return this.loggingPath != null;
+	}
 }

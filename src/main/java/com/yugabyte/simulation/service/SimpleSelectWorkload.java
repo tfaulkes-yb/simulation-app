@@ -22,7 +22,7 @@ import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
-//@Repository
+@Repository
 public class SimpleSelectWorkload extends WorkloadSimulationBase implements WorkloadSimulation {
 
 	@Autowired
@@ -34,6 +34,11 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 	@Autowired 
 	private WorkloadManager workloadManager;
 	
+	@Override
+	public String getName() {
+		return "Simple Select";
+	}
+
 	private static final String CREATE_TABLE =
 			"create table if not exists vulgar_words ("
 			+ "id uuid not null, "
