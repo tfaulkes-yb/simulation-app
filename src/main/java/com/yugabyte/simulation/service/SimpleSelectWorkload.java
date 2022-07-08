@@ -49,12 +49,14 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 			+ ") split into 1 tablets;";
 			
 	private final String DROP_TABLE = "drop table if exists vulgar_words;";
+	
+	private final String CREATE_INDEX = "create index active_idx on vulgar_words ( active_ind ) include (word_name) where active_ind = true;";
 
 	private final String INSERT_RECORD = "insert into vulgar_words("
 			+ "id, word_name, active_ind)"
 			+ " values (?, ?, ?);";
 	
-	private final String QUERY = "select * from vulgar_words where active_ind = true;";
+	private final String QUERY = "select word_name from vulgar_words where active_ind = true;";
 	
 	private enum WorkloadType {
 		CREATE_TABLES, 
@@ -79,6 +81,7 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 				new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),
 				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(2000);} catch (Exception e) {} }),
 				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),
+				new FixedStepsWorkloadType.Step("Create Index", (a,b) -> jdbcTemplate.execute(CREATE_INDEX)),
 				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(3000);} catch (Exception e) {} })
 		);
 				
@@ -183,10 +186,10 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 					new RowCallbackHandler() {
 						@Override
 						public void processRow(ResultSet rs) throws SQLException {
-							System.out.printf("id=%s, word='%s', active=%b\n", 
-									rs.getString("id"),
-									rs.getString("word_name"),
-									rs.getInt("active_ind"));
+//							System.out.printf("id=%s, word='%s', active=%b\n", 
+//									rs.getString("id"),
+//									rs.getString("word_name"),
+//									rs.getInt("active_ind"));
 						}
 					});
 			});
