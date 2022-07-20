@@ -1,8 +1,5 @@
 package com.yugabyte.simulation.service;
-import com.yugabyte.simulation.dao.InvocationResult;
-import com.yugabyte.simulation.dao.ParamValue;
-import com.yugabyte.simulation.dao.WorkloadDesc;
-import com.yugabyte.simulation.dao.WorkloadParamDesc;
+import com.yugabyte.simulation.dao.*;
 import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.workload.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -48,14 +46,14 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
 
     private static final String CREATE_TABLE2 = "create table  if not exists table2(\n" +
             "   pkid uuid,\n" +
-            "   col1 bytea,\n" +
+            "   rawdatacol bytea,\n" +
             "   primary key (pkid)\n" +
             ");";
 
     private static final String CREATE_TABLE3 = "create table if not exists table3(\n" +
             "   pkid uuid,\n" +
             "   col1 varchar(255),\n" +
-            "   col2 bytea,\n" +
+            "   rawdatacol bytea,\n" +
             "   primary key (pkid)\n" +
             ");";
 
@@ -70,19 +68,24 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
 
     // column 8 and 9 in table 1 are timestamps. I will let db populate those.
     private static final String INSERT_RECORD_TABLE1 = "insert into table1(pkid, col1, col2, col3, col4, col5, col6, col7) values(?,?,?,?,?,?,?,?);";
-    private static final String INSERT_RECORD_TABLE2 = "insert into table2(pkid, col1) values(?,?);";
-    private static final String INSERT_RECORD_TABLE3 = "insert into table3(pkid, col1, col2) values(?,?,?);";
+    private static final String INSERT_RECORD_TABLE2 = "insert into table2(pkid, rawdatacol) values(?,?);";
+    private static final String INSERT_RECORD_TABLE3 = "insert into table3(pkid, col1, rawdatacol) values(?,?,?);";
 
     private final String POINT_SELECT_QUERY_TABLE1 = "select pkid,col1,col2,col3,col4,col5,col6,col7,col8,col9 from table1 where pkid = ?::uuid;";
-    private final String POINT_SELECT_QUERY_TABLE2 = "select pkid,col1 from table2 where pkid = ?::uuid;";
-    private final String POINT_SELECT_QUERY_TABLE3 = "select pkid,col1,col2 from table3 where pkid = ?::uuid;";
+    private final String POINT_SELECT_QUERY_TABLE2 = "select pkid,rawdatacol from table2 where pkid = ?::uuid;";
+    private final String POINT_SELECT_QUERY_TABLE3 = "select pkid,col1,rawdatacol from table3 where pkid = ?::uuid;";
+
+    private final String SELECT_QUERY_ON_BINARYCOL_TABLE2 = "select pkid,rawdatacol from table2 where rawdatacol like ?::bytea limit 100;";
+    private final String SELECT_QUERY_ON_BINARYCOL_TABLE3 = "select pkid,col1,rawdatacol from table3 where rawdatacol like ?::bytea limit 100;";
 
     private static final int ROWS_TO_PRELOAD = 10000;
 
     private enum WorkloadType {
         CREATE_TABLES,
         SEED_DATA,
-        RUN_SIMULATION
+        RUN_SIMULATION,
+        RUN_LIKE_QUERY_ON_TABLE2,
+        RUN_LIKE_QUERY_ON_TABLE3
     }
 
     private final FixedStepsWorkloadType createTablesWorkloadType;
@@ -126,12 +129,31 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
             new WorkloadParamDesc("Include new Inserts (to 3 tables)", false)
     );
 
+    private WorkloadDesc runningWorkloadWithLikeOnByteaColInTable2 = new WorkloadDesc(
+            WorkloadType.RUN_LIKE_QUERY_ON_TABLE2.toString(),
+            "Select Query on Binary Data (non indexed) [Table2]",
+            "Run Query with like clause on binary column for Table2. rawdatacol is non indexed column containing blob data.",
+            new WorkloadParamDesc("rawdatacol value", ParamType.STRING)
+    );
+
+    private WorkloadDesc runningWorkloadWithLikeOnByteaColInTable3 = new WorkloadDesc(
+            WorkloadType.RUN_LIKE_QUERY_ON_TABLE3.toString(),
+            "Select Query on Binary Data (non indexed) [Table3]",
+            "Run Query with like clause on binary column for Table3. rawdatacol is non indexed column containing blob data.",
+            new WorkloadParamDesc("rawdatacol value", ParamType.STRING)
+    );
+
+
+
     @Override
     public List<WorkloadDesc> getWorkloads() {
         return Arrays.asList(
                 createTablesWorkload
                 , seedingWorkload
                 , runningWorkload
+                , runningWorkloadWithLikeOnByteaColInTable2
+                , runningWorkloadWithLikeOnByteaColInTable3
+
         );
     }
 
@@ -151,6 +173,13 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
 
                 case RUN_SIMULATION:
                     this.runSimulation(values[0].getIntValue(), values[1].getIntValue(), values[2].getBoolValue());
+                    return new InvocationResult("Ok");
+
+                case RUN_LIKE_QUERY_ON_TABLE2:
+                    this.runSimulationWithLikeOnByteaColForTable2(values[0].getStringValue());
+                    return new InvocationResult("Ok");
+                case RUN_LIKE_QUERY_ON_TABLE3:
+                    this.runSimulationWithLikeOnByteaColForTable3(values[0].getStringValue());
                     return new InvocationResult("Ok");
             }
             throw new IllegalArgumentException("Unknown workload "+ workloadId);
@@ -260,9 +289,9 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
                 new RowCallbackHandler() {
                     @Override
                     public void processRow(ResultSet rs) throws SQLException {
-/*                                    System.out.printf("pkid=%s, col1='%s' \n",
+/*                                    System.out.printf("pkid=%s, rawdatacol='%s' \n",
                                             rs.getString("pkid"),
-                                            rs.getBytes("col1") != null?rs.getBytes("col1").length:null
+                                            rs.getBytes("rawdatacol") != null?rs.getBytes("rawdatacol").length:null
                                     );*/
                     }
                 });
@@ -274,10 +303,10 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
                 new RowCallbackHandler() {
                     @Override
                     public void processRow(ResultSet rs) throws SQLException {
-/*                        System.out.printf("pkid=%s, col1='%s' , col2='%s' \n",
+/*                        System.out.printf("pkid=%s, col1='%s' , rawdatacol='%s' \n",
                                 rs.getString("pkid"),
                                 rs.getString("col1"),
-                                rs.getBytes("col2") != null?rs.getBytes("col1").length:null
+                                rs.getBytes("rawdatacol") != null?rs.getBytes("rawdatacol").length:null
                         );*/
                     }
                 });
@@ -304,6 +333,41 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
                 LoadGeneratorUtils.getAlphaString(LoadGeneratorUtils.getInt(1,255)),
                 LoadGeneratorUtils.getBinaryDataOfFixedSize(LoadGeneratorUtils.getInt(0,4096))
         );
+    }
+
+    private void runSimulationWithLikeOnByteaColForTable2(String rawDataColVal){
+        long now = System.nanoTime();
+        System.out.println("**************** Single query on Table2 with like:["+SELECT_QUERY_ON_BINARYCOL_TABLE2+"] rawDataColVal:["+rawDataColVal+"]");
+        jdbcTemplate.query(SELECT_QUERY_ON_BINARYCOL_TABLE2, new Object[] {"%"+rawDataColVal+"%"}, new int[] {Types.VARCHAR},
+                new RowCallbackHandler() {
+                    @Override
+                    public void processRow(ResultSet rs) throws SQLException {
+                        System.out.printf(
+                                "pkid='%s', rawdatacol='%s'\n",
+                                ((UUID)rs.getObject("pkid")).toString(),
+                                rs.getString("rawdatacol"));
+                    }
+                });
+        System.out.printf("**************** Results for raw data like query for Table2 from %s fetched in %fms\n", rawDataColVal, (System.nanoTime() - now) / 1_000_000.0);
+
+    }
+
+    private void runSimulationWithLikeOnByteaColForTable3(String rawDataColVal){
+        long now = System.nanoTime();
+        System.out.println("**************** Single query on Table3 with like:["+SELECT_QUERY_ON_BINARYCOL_TABLE3+"] rawDataColVal:["+rawDataColVal+"]");
+        jdbcTemplate.query(SELECT_QUERY_ON_BINARYCOL_TABLE3, new Object[] {"%"+rawDataColVal+"%"}, new int[] {Types.VARCHAR},
+                new RowCallbackHandler() {
+                    @Override
+                    public void processRow(ResultSet rs) throws SQLException {
+                        System.out.printf(
+                                "pkid='%s', col1='%s', rawdatacol='%s'\n",
+                                ((UUID)rs.getObject("pkid")).toString(),
+                                rs.getString("col1"),
+                                rs.getString("rawdatacol"));
+                    }
+                });
+        System.out.printf("**************** Results for raw data like query for Table3 from %s fetched in %fms\n", rawDataColVal, (System.nanoTime() - now) / 1_000_000.0);
+
     }
 
 
