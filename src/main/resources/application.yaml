@@ -28,3 +28,7 @@ logging.level:
   org.hibernate.SQL: DEBUG
   org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   com.yugabyte.simulation.workload: DEBUG
+  
+server:
+  port: 8080
+  

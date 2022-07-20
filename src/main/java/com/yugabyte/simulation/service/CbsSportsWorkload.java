@@ -14,6 +14,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
@@ -70,6 +73,10 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 	private enum WorkloadType {
 		CREATE_TABLES, 
 		RUN_SIMULATION,
+		RUN_SIMULATION_RO_RR,
+		RUN_SIMULATION_RO_RC,
+		RUN_SIMULATION_RW_RR,
+		RUN_SIMULATION_RW_RC,
 	}		
 	
 	private final FixedStepsWorkloadType createTablesWorkloadType;
@@ -109,10 +116,46 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 			new WorkloadParamDesc("Threads", 1, 500, 32)
 		);
 	
+	private WorkloadDesc runningWorkload_RO_RR = new WorkloadDesc(
+			WorkloadType.RUN_SIMULATION_RO_RR.toString(),
+			"Simulation_RO_RR",
+			"Run a simulation of a simple table",
+			new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("Delay", 0, 1000000, 0),
+			new WorkloadParamDesc("Threads", 1, 500, 32)
+		);
+	
+	private WorkloadDesc runningWorkload_RO_RC = new WorkloadDesc(
+			WorkloadType.RUN_SIMULATION_RO_RC.toString(),
+			"Simulation_RO_RC",
+			"Run a simulation of a simple table",
+			new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("Delay", 0, 1000000, 0),
+			new WorkloadParamDesc("Threads", 1, 500, 32)
+		);
+	
+	private WorkloadDesc runningWorkload_RW_RR = new WorkloadDesc(
+			WorkloadType.RUN_SIMULATION_RW_RR.toString(),
+			"Simulation_RW_RR",
+			"Run a simulation of a simple table",
+			new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("Delay", 0, 1000000, 0),
+			new WorkloadParamDesc("Threads", 1, 500, 32)
+		);
+	
+	private WorkloadDesc runningWorkload_RW_RC = new WorkloadDesc(
+			WorkloadType.RUN_SIMULATION_RW_RC.toString(),
+			"Simulation_RW_RC",
+			"Run a simulation of a simple table",
+			new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("Delay", 0, 1000000, 0),
+			new WorkloadParamDesc("Threads", 1, 500, 32)
+		);
+	
 	@Override
 	public List<WorkloadDesc> getWorkloads() {
 		return Arrays.asList(
-			createTablesWorkload, runningWorkload
+			createTablesWorkload, runningWorkload, runningWorkload_RO_RR, runningWorkload_RO_RC, runningWorkload_RW_RC, runningWorkload_RW_RR
 		);
 	}
 	
@@ -129,6 +172,22 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 				this.runSimulation(values[0].getIntValue(), values[1].getIntValue(), values[2].getIntValue());
 				return new InvocationResult("Ok");
 
+			case RUN_SIMULATION_RO_RR:
+				this.runSimulation_RO_RR(values[0].getIntValue(), values[1].getIntValue(), values[2].getIntValue());
+				return new InvocationResult("Ok");
+
+			case RUN_SIMULATION_RO_RC:
+				this.runSimulation_RO_RC(values[0].getIntValue(), values[1].getIntValue(), values[2].getIntValue());
+				return new InvocationResult("Ok");
+
+			case RUN_SIMULATION_RW_RR:
+				this.runSimulation_RW_RR(values[0].getIntValue(), values[1].getIntValue(), values[2].getIntValue());
+				return new InvocationResult("Ok");
+
+			case RUN_SIMULATION_RW_RC:
+				this.runSimulation_RW_RC(values[0].getIntValue(), values[1].getIntValue(), values[2].getIntValue());
+				return new InvocationResult("Ok");
+
 			}
 			throw new IllegalArgumentException("Unknown workload "+ workloadId);
 		}
@@ -141,28 +200,116 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 		createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
 	}
 	
+	private void runQueryNoTxn() {
+		int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
+		jdbcTemplate.query(QUERY, new Object[] {custNum}, new int[] {Types.INTEGER},
+			new RowCallbackHandler() {
+				@Override
+				public void processRow(ResultSet rs) throws SQLException {
+				}
+			});
+	}
+	
+	@Transactional(readOnly = true, propagation = Propagation.NOT_SUPPORTED, isolation = Isolation.REPEATABLE_READ)
+	private void runQuery_RO_RR_Txn() {
+		int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
+		jdbcTemplate.query(QUERY, new Object[] {custNum}, new int[] {Types.INTEGER},
+			new RowCallbackHandler() {
+				@Override
+				public void processRow(ResultSet rs) throws SQLException {
+				}
+			});
+	}
+	
+	@Transactional(readOnly = true, propagation = Propagation.NOT_SUPPORTED, isolation = Isolation.READ_COMMITTED)
+	private void runQuery_RO_RC_Txn() {
+		int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
+		jdbcTemplate.query(QUERY, new Object[] {custNum}, new int[] {Types.INTEGER},
+			new RowCallbackHandler() {
+				@Override
+				public void processRow(ResultSet rs) throws SQLException {
+				}
+			});
+	}
+	
+	@Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED, isolation = Isolation.REPEATABLE_READ)
+	private void runQuery_RW_RR_Txn() {
+		int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
+		jdbcTemplate.query(QUERY, new Object[] {custNum}, new int[] {Types.INTEGER},
+			new RowCallbackHandler() {
+				@Override
+				public void processRow(ResultSet rs) throws SQLException {
+				}
+			});
+	}
+	
+	@Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED, isolation = Isolation.READ_COMMITTED)
+	private void runQuery_RW_RC_Txn() {
+		int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
+		jdbcTemplate.query(QUERY, new Object[] {custNum}, new int[] {Types.INTEGER},
+			new RowCallbackHandler() {
+				@Override
+				public void processRow(ResultSet rs) throws SQLException {
+				}
+			});
+	}
+	
 	private void runSimulation(int target, int delay, int threads) {
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
 			.createInstance(timerService, workloadManager)
+			.setDelayBetweenInvocations(delay)
 			.execute(threads, target, (customData, threadData) -> {
-				String query = QUERY;
-				int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
-				jdbcTemplate.query(query, new Object[] {custNum}, new int[] {Types.INTEGER},
-					new RowCallbackHandler() {
-						@Override
-						public void processRow(ResultSet rs) throws SQLException {
-						}
-					});
-				if (delay > 0) {
-					try {
-						Thread.sleep(delay);
-					} catch (InterruptedException e) {
-						throw new RuntimeException(e);
-					}
-				}
+				runQueryNoTxn();
 				return null;
 			});
 	}
+	
+	private void runSimulation_RW_RC(int target, int delay, int threads) {
+		jdbcTemplate.setFetchSize(1000);
+
+		runInstanceType
+			.createInstance(timerService, workloadManager)
+			.setDelayBetweenInvocations(delay)
+			.execute(threads, target, (customData, threadData) -> {
+				runQuery_RW_RC_Txn();
+				return null;
+			});
+	}
+	
+	private void runSimulation_RO_RR(int target, int delay, int threads) {
+		jdbcTemplate.setFetchSize(1000);
+
+		runInstanceType
+			.createInstance(timerService, workloadManager)
+			.setDelayBetweenInvocations(delay)
+			.execute(threads, target, (customData, threadData) -> {
+				runQuery_RO_RR_Txn();
+				return null;
+			});
+	}
+	private void runSimulation_RO_RC(int target, int delay, int threads) {
+		jdbcTemplate.setFetchSize(1000);
+
+		runInstanceType
+			.createInstance(timerService, workloadManager)
+			.setDelayBetweenInvocations(delay)
+			.execute(threads, target, (customData, threadData) -> {
+				runQuery_RO_RC_Txn();
+				return null;
+			});
+	}
+	private void runSimulation_RW_RR(int target, int delay, int threads) {
+		jdbcTemplate.setFetchSize(1000);
+
+		runInstanceType
+			.createInstance(timerService, workloadManager)
+			.setDelayBetweenInvocations(delay)
+			.execute(threads, target, (customData, threadData) -> {
+				runQuery_RW_RR_Txn();
+				return null;
+			});
+	}
+
 }

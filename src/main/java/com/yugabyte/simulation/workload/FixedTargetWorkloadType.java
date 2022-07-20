@@ -38,10 +38,11 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private final long target;
 		private final int workloadOrdinal;
 		private final FixedTargetWorkloadInstance instance;
+		private final int invocationDelayMs;
 
 		public WorkerThread(int threadId, AtomicBoolean terminate, AtomicLong completedCounter, 
 				AtomicLong startedCounter, long target, Object customData, TimerService timerService, 
-				ExecuteTask task,int workloadOrdinal, FixedTargetWorkloadInstance fixedInstance) {
+				ExecuteTask task,int workloadOrdinal, FixedTargetWorkloadInstance fixedInstance, int invocationDelayMs) {
 			this.terminate = terminate;
 			this.customData = customData;
 			this.threadData = null;
@@ -52,6 +53,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 			this.target = target;
 			this.workloadOrdinal = workloadOrdinal;
 			this.instance = fixedInstance;
+			this.invocationDelayMs = invocationDelayMs;
 		}
 		
 		@Override
@@ -67,6 +69,13 @@ public class FixedTargetWorkloadType extends WorkloadType {
 					// TODO Log exception?
 				}
 				this.completedCounter.incrementAndGet();
+				if (this.invocationDelayMs > 0) {
+					try {
+						Thread.sleep(invocationDelayMs);
+					} catch (InterruptedException e) {
+						terminate.set(true);
+					}
+				}
 			}
 			if (!terminate.get()) {
 				synchronized (terminate) {
@@ -118,6 +127,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private ExecutorService executor = null;
 		private long target = 0;
 		private Object customData = null;
+		private int invocationDelayMs = 0;
 		
 		public FixedTargetWorkloadInstance(TimerService timerService) {
 			super(timerService);
@@ -173,9 +183,14 @@ public class FixedTargetWorkloadType extends WorkloadType {
 			this.executor = Executors.newFixedThreadPool(numThreads);
 			this.startTime = System.currentTimeMillis();
 			for (int i = 0; i < numThreads; i++) {
-				WorkerThread worker = new WorkerThread(i, terminate, completedCounter, startedCounter, target, customData, getTimerService(), runner, this.getWorkloadOrdinal(), this);
+				WorkerThread worker = new WorkerThread(i, terminate, completedCounter, startedCounter, target, customData, getTimerService(), runner, this.getWorkloadOrdinal(), this, this.invocationDelayMs);
 				executor.submit(worker);
 			}
+		}
+		
+		public FixedTargetWorkloadInstance setDelayBetweenInvocations(int delayInMs) {
+			this.invocationDelayMs = delayInMs;
+			return this;
 		}
 		
 		public double getPercentComplete() {

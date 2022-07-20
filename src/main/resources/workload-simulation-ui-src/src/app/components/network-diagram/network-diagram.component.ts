@@ -123,7 +123,7 @@ export class NetworkDiagramComponent implements OnInit, AfterViewInit, OnChanges
     }
     this.graphLinks = allLinks;
     this.graphNodes = allNodes
-    if (this.currentNodes.length != this.graphNodes.length) {
+    if (this.currentNodes.length != this.graphNodes.length && this.rootElement) {
       this.updateGraph();
       this.currentNodes = this.graphNodes;
     }

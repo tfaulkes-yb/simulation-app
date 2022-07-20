@@ -43,6 +43,8 @@ public class LoggingFileManager {
 
 		@Override
 		public void execute() {
+			File file = new File(loggingPath);
+			file.mkdirs();
 			String filePath = loggingPath + id + ".csv";
 			try {
 				BufferedWriter writer = new BufferedWriter(new FileWriter(new File(filePath), true), 1024);
