@@ -445,9 +445,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 					new WorkloadParamDesc("Truncate tables", false),
 					new WorkloadParamDesc("Number of threads", 1, 1024, 32),
 					new WorkloadParamDesc("Fixed size records", false)
-				)
-				.nameWorkload(TimerType.WORKLOAD2, "MhhMap")
-				.nameWorkload(TimerType.WORKLOAD1, "Topology");
+				);
 	
 	private WorkloadDesc runningWorkload = new WorkloadDesc(
 			WorkloadType.RUN_SIMULATION.toString(),
@@ -470,9 +468,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			new WorkloadParamDesc("Max Threads", 1, 500, 64),
 			new WorkloadParamDesc("Use hierarchial query", false),
 			new WorkloadParamDesc("Use UserIds in hierarchy query", true)
-			)
-			.nameWorkload(TimerType.WORKLOAD1, "Inserts")
-			.nameWorkload(TimerType.WORKLOAD2, "Hierarchy");
+			);
 	
 	private WorkloadDesc runTopDownQuery = new WorkloadDesc(
 			WorkloadType.RUN_TOP_DOWN_QUERY.toString(),

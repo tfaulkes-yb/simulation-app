@@ -79,7 +79,7 @@
           <label for="graphRefreshMs">Graph Refresh Period (ms):</label>
         </div>
         <div class="col-8">
-          <p-inputNumber id="graphRefreshMs" style="width:100%" name="graphRefreshMs" [(ngModel)]="editingSystemPreferences.graphRefreshMs" [min]="10"></p-inputNumber>
+          <p-inputNumber id="graphRefreshMs" [inputStyle]="{width:'100%'}" name="graphRefreshMs" [(ngModel)]="editingSystemPreferences.graphRefreshMs" [min]="10"></p-inputNumber>
         </div>
       </div>
       <div class="grid">
@@ -87,7 +87,7 @@
           <label for="networkRefreshMs">Network Refresh Period (ms):</label>
         </div>
         <div class="col-8">
-          <p-inputNumber id="networkRefreshMs" pInputNumber style="width:100%" name="networkRefreshMs" [(ngModel)]="editingSystemPreferences.networkRefreshMs" [min]="10"></p-inputNumber>
+          <p-inputNumber id="networkRefreshMs" [inputStyle]="{width:'100%'}" name="networkRefreshMs" [(ngModel)]="editingSystemPreferences.networkRefreshMs" [min]="10"></p-inputNumber>
         </div>
       </div>
       <div class="mt-3">

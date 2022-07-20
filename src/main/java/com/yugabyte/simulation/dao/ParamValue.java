@@ -142,4 +142,14 @@ public class ParamValue {
 	public ParamType getType() {
 		return type;
 	}
+	
+	@Override
+	public String toString() {
+		switch (type) {
+		case BOOLEAN: return Boolean.toString(this.boolValue);
+		case NUMBER: return Integer.toString(this.intValue);
+		case STRING: return "'" + this.stringValue + "'";
+		default: return "";
+		}
+	}
 }

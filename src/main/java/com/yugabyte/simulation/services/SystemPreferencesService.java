@@ -30,9 +30,14 @@ public class SystemPreferencesService {
 				this.currentPreferences.isDoLogging(), this.currentPreferences.getLoggingDir());
 	}
 
+	public void setLoggingPreferences(boolean doLogging, String loggingDir) {
+    	this.currentPreferences.setDoLogging(doLogging);
+    	this.currentPreferences.setLoggingDir(loggingDir);
+    	this.loggingManager.updateLoggingPreferences(currentPreferences.isDoLogging(), currentPreferences.getLoggingDir());
+	}
 
     public void saveSystemPreferences(SystemPreferences preferences) {
-    	loggingManager.updateLoggingPreferences(preferences.isDoLogging(), preferences.getLoggingDir());
+    	this.loggingManager.updateLoggingPreferences(preferences.isDoLogging(), preferences.getLoggingDir());
     	this.currentPreferences.setNetworkRefreshMs(preferences.getNetworkRefreshMs());
     	this.currentPreferences.setGraphRefreshMs(preferences.getGraphRefreshMs());
     	this.currentPreferences.setDoLogging(preferences.isDoLogging());

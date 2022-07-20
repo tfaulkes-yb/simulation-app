@@ -154,6 +154,9 @@ export class NetworkDiagramComponent implements OnInit, AfterViewInit, OnChanges
   }
 
   updateGraph() {
+    if (!this.rootElement) {
+      return;
+    }
     this.rootElement.selectAll('g').remove();
     this.colorMap = d3.scaleOrdinal(d3.schemeCategory10);
 

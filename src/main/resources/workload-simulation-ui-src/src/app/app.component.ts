@@ -25,12 +25,12 @@ export class AppComponent implements AfterViewInit, OnInit {
   items!: MenuItem[];
 
   status = '';
-  updateThreads : number = 20;
-  updateRequests : number = 10000;
-  workload2Threads : number = 10;
-  workload2Requests : number = 40000;
-  workload1Threads: number = 5;
-  workload1Requests : number = 50000;
+  // updateThreads : number = 20;
+  // updateRequests : number = 10000;
+  // workload2Threads : number = 10;
+  // workload2Requests : number = 40000;
+  // workload1Threads: number = 5;
+  // workload1Requests : number = 50000;
 
   AGGREGATION_WORKLOAD = 'Aggregation Counter';
   showDialog = false;
@@ -39,18 +39,18 @@ export class AppComponent implements AfterViewInit, OnInit {
   activeWorkloads : string[] = [];
   startTime = 0;
   MAX_READINGS = 3600;
-  WORKLOAD1 = "WORKLOAD1";
-  WORKLOAD2 = "WORKLOAD2";
+  // WORKLOAD1 = "WORKLOAD1";
+  // WORKLOAD2 = "WORKLOAD2";
   LATENCY = "LATENCY";
   THROUGHPUT = "THROUGHPUT";
 
   systemPreferences : SystemPreferences = {doLogging: false, loggingDir : '/tmp', workloadName: '', graphRefreshMs: 350, networkRefreshMs: 1000};
   editingSystemPreferences : SystemPreferences = {...this.systemPreferences};
 
-  workload1Latency = "Workload 1";
-  workload2Latency = "Workload 2";
-  workload1Throughput = "Workload 1";
-  workload2Throughput = "Workload 2";
+  // workload1Latency = "Workload 1";
+  // workload2Latency = "Workload 2";
+  // workload1Throughput = "Workload 1";
+  // workload2Throughput = "Workload 2";
 
   workloadValues : any = null;
   valuesComputed = false;
@@ -63,14 +63,6 @@ export class AppComponent implements AfterViewInit, OnInit {
   commsErrorCount : number = 0;
   timer : any;
 
-  steps : MenuItem[] = [
-    {label: 'Dropping Topology (3m 27s)'},
-    {label: 'Dropping Mhhmap'},
-    {label: 'Creating Topology'},
-    {label: 'Creating Mhhmap'},
-  ];
-  stepIndex = 1;
-
   private minDuration = 60*1000;
   private maxDuration = this.MAX_READINGS * 1000;
   duration = 3 * 60 * 1000;
@@ -79,7 +71,7 @@ export class AppComponent implements AfterViewInit, OnInit {
             private workloadService : WorkloadService ) {
     this.timer = setInterval(() => {
       this.getResults();
-    },340);
+    },350);
 
     workloadService.getWorkloadObservable().subscribe( data => this.computeWorkloadValues(data));
     this.getSystemPreferences();
@@ -123,15 +115,21 @@ export class AppComponent implements AfterViewInit, OnInit {
   ngAfterViewInit() {
   }
 
-  stopWorkload(evt :any) {
-    console.log("update");
+  private extractWorkloadIdFromEvent(evt : any)  : string {
     let control = evt.originalEvent.srcElement.closest('.workload-inst');
     let classes = control.classList;
     for (const thisClass of classes) {
       if (thisClass.match(/^[A-Z]+_\d+$/)) {
-        this.terminateTask(thisClass);
-        return;
+        return thisClass;
       }
+    }
+    return '';
+  }
+
+  stopWorkload(evt :any) {
+    let result = this.extractWorkloadIdFromEvent(evt);
+    if (result) {
+      this.terminateTask(result);
     }
   }
   delete() {
@@ -254,10 +252,10 @@ export class AppComponent implements AfterViewInit, OnInit {
         let thisWorkload = workloads[i];
 
         // Set the names of the workloads
-        this.workload1Latency = thisWorkload.workloadNames.WORKLOAD1 || 'Workload 1';
-        this.workload2Latency = thisWorkload.workloadNames.WORKLOAD2 || 'Workload 2';
-        this.workload1Throughput = thisWorkload.workloadNames.WORKLOAD1 || 'Workload 1';
-        this.workload2Throughput = thisWorkload.workloadNames.WORKLOAD2 || 'Workload 2';
+        // this.workload1Latency = thisWorkload.workloadNames.WORKLOAD1 || 'Workload 1';
+        // this.workload2Latency = thisWorkload.workloadNames.WORKLOAD2 || 'Workload 2';
+        // this.workload1Throughput = thisWorkload.workloadNames.WORKLOAD1 || 'Workload 1';
+        // this.workload2Throughput = thisWorkload.workloadNames.WORKLOAD2 || 'Workload 2';
 
         for (let paramIndex = 0; paramIndex < thisWorkload.params.length; paramIndex++) {
           let thisParam = thisWorkload.params[paramIndex];

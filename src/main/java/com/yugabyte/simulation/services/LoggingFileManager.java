@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.PreDestroy;
 
 import org.springframework.stereotype.Service;
 
@@ -21,6 +24,9 @@ public class LoggingFileManager {
 	private final Thread loggingThread;
 	private final BlockingQueue<LoggingAction> queue;
 	private int counter = 0;
+	private AtomicBoolean shutdownComplete = new AtomicBoolean(false);
+	private AtomicBoolean doShutdown = new AtomicBoolean(false);
+	
 
 	private interface LoggingAction {
 		void execute();
@@ -96,17 +102,25 @@ public class LoggingFileManager {
 			}
 		}
 	}
+	
+	private class ShutdownClass implements LoggingAction {
+		@Override
+		public void execute() {
+			doShutdown.set(true);
+		}
+	}
 
 	public LoggingFileManager() {
 		queue = new ArrayBlockingQueue<LoggingAction>(10000, false);
 		
 		loggingThread = new Thread(() -> {
-			while (true) {
+			while (!doShutdown.get()) {
 				try {
 					queue.take().execute();
 				}
 				catch (InterruptedException ie) {}
 			}
+			shutdownComplete.set(true);
 		});
 		loggingThread.setDaemon(true);
 		loggingThread.start();
@@ -168,5 +182,17 @@ public class LoggingFileManager {
 	
 	public boolean isDoLogging() {
 		return this.loggingPath != null;
+	}
+	
+	@PreDestroy
+	public void shutdown() {
+		try {
+			this.closeAllLogs();
+			queue.put(new ShutdownClass());
+			while (!shutdownComplete.get()) {
+				Thread.sleep(1000);
+			}
+		} catch (InterruptedException e) {
+		}
 	}
 }
