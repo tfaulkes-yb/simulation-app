@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.Timer;
 import com.yugabyte.simulation.services.TimerService;
 
@@ -58,7 +59,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		
 		@Override
 		public void run() {
-			while (!terminate.get() && startedCounter.incrementAndGet() < target) {
+			while (!terminate.get() && startedCounter.getAndIncrement() < target) {
 				timer.start();
 				try {
 					this.threadData = task.run(customData, threadData);
@@ -66,7 +67,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 				}
 				catch (Exception e) {
 					timer.end(ExecutionStatus.ERROR, workloadOrdinal);
-					// TODO Log exception?
+					instance.handleException(e);
 				}
 				this.completedCounter.incrementAndGet();
 				if (this.invocationDelayMs > 0) {
@@ -129,8 +130,8 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private Object customData = null;
 		private int invocationDelayMs = 0;
 		
-		public FixedTargetWorkloadInstance(TimerService timerService) {
-			super(timerService);
+		public FixedTargetWorkloadInstance(ServiceManager serviceManager) {
+			super(serviceManager);
 		}
 		public FixedTargetWorkloadInstance setCustomData(Object customData) {
 			this.customData = customData;
@@ -227,9 +228,7 @@ public class FixedTargetWorkloadType extends WorkloadType {
 	}
 
 	@Override
-	public FixedTargetWorkloadInstance createInstance(TimerService timerService, WorkloadManager workloadManager) {
-		FixedTargetWorkloadInstance result = new FixedTargetWorkloadInstance(timerService);
-		workloadManager.registerWorkloadInstance(result);
-		return result;
+	public FixedTargetWorkloadInstance createInstance(ServiceManager serviceManager) {
+		return new FixedTargetWorkloadInstance(serviceManager);
 	}
 }

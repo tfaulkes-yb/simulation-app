@@ -1,10 +1,10 @@
 package com.yugabyte.simulation.workload;
 
-import com.yugabyte.simulation.services.TimerService;
+import com.yugabyte.simulation.services.ServiceManager;
 
 public abstract class WorkloadType {
 	public abstract String getTypeName();
-	public abstract WorkloadTypeInstance createInstance(TimerService timerService, WorkloadManager workloadManager);
+	public abstract WorkloadTypeInstance createInstance(ServiceManager serviceManager);
 	public boolean canBeTerminated() {
 		return true;
 	}

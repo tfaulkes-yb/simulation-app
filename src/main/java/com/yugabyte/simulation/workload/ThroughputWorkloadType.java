@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.Timer;
 import com.yugabyte.simulation.services.TimerService;
 
@@ -49,9 +50,13 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private final CallbackHandler terminationHandler;
 		private final Class<?> threadDataClass;
 		private final int workloadOrdinal;
+		private final ThroughputWorkloadInstance instance;
 	    private static final Logger LOGGER = LoggerFactory.getLogger(ThroughputWorkloadType.class);
 		
-		public ThreadManager(int desiredRate, int maxThreads, ExecutorService executor, ExecuteTask runner, Object customData, TimerService timerservice, CallbackHandler initializationHandler, CallbackHandler terminationHandler, Class<?> threadDaClass, int workloadOrdinal) {
+		public ThreadManager(int desiredRate, int maxThreads, ExecutorService executor, 
+				ExecuteTask runner, Object customData, TimerService timerservice, 
+				CallbackHandler initializationHandler, CallbackHandler terminationHandler, 
+				Class<?> threadDaClass, int workloadOrdinal, ThroughputWorkloadInstance instance) {
 			super();
 			this.desiredRate = desiredRate;
 			this.executor = executor;
@@ -67,6 +72,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 			this.terminationHandler = terminationHandler;
 			this.threadDataClass = threadDaClass;
 			this.workloadOrdinal = workloadOrdinal;
+			this.instance = instance;
 		}
 
 		public int getDesiredRate() {
@@ -111,7 +117,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 							throw new RuntimeException(e);
 						}
 					}
-					this.executor.submit(new WorkerThread(threadDelay, idleTimeCounter, transactionCounter, terminate, runner, customData, timerService, initializationHandler, terminationHandler, threadData, workloadOrdinal));
+					this.executor.submit(new WorkerThread(threadDelay, idleTimeCounter, transactionCounter, terminate, runner, customData, timerService, initializationHandler, terminationHandler, threadData, workloadOrdinal, this.instance));
 					this.currentThreads++;
 				}
 			}
@@ -212,9 +218,14 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private final CallbackHandler initializationHandler;
 		private final CallbackHandler terminationHandler;
 		private final int workloadOrdinal;
+		private final ThroughputWorkloadInstance instance;
 	    private static final Logger LOGGER = LoggerFactory.getLogger(ThroughputWorkloadType.class);
 		
-		public WorkerThread(AtomicInteger threadDelay, AtomicLong idleTimeCounter, AtomicInteger transactionCounter, AtomicBoolean terminate, ExecuteTask task, Object customData, TimerService timerService, CallbackHandler initializationHandler, CallbackHandler terminationHandler, Object threadData, int workloadOrdinal) {
+		public WorkerThread(AtomicInteger threadDelay, AtomicLong idleTimeCounter,
+				AtomicInteger transactionCounter, AtomicBoolean terminate, 
+				ExecuteTask task, Object customData, TimerService timerService, 
+				CallbackHandler initializationHandler, CallbackHandler terminationHandler, 
+				Object threadData, int workloadOrdinal, ThroughputWorkloadInstance instance) {
 			this.threadDelay = threadDelay;
 			this.task = task;
 			this.terminate = terminate;
@@ -226,6 +237,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 			this.initializationHandler = initializationHandler;
 			this.terminationHandler = terminationHandler;
 			this.workloadOrdinal = workloadOrdinal;
+			this.instance = instance;
 		}
 		
 		private void sleep(int milliseconds) {
@@ -257,21 +269,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 					}
 					catch (Exception e) {
 						timeInNs = timer.end(ExecutionStatus.ERROR, this.workloadOrdinal);
-						long now = System.currentTimeMillis();
-						if (LOGGER.isDebugEnabled()) {
-							LOGGER.debug("Exception thrown executing task " + task.getClass().getName(), e);
-						}
-						else if (LOGGER.isInfoEnabled() && now-lastError > 2000) {
-							if (skippedErrors > 0) {
-								LOGGER.info("Skipped "+skippedErrors+ " other errors");
-							}
-							LOGGER.info("Exception thrown executing task " + task.getClass().getName(), e);
-							lastError = now;
-							skippedErrors = 0;
-						}
-						else {
-							skippedErrors++;
-						}
+						instance.handleException(e);
 					}
 					this.transactionCounter.incrementAndGet();
 					int idleTime = threadDelay.get() - (int)(timeInNs / 1000000);
@@ -299,8 +297,8 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private CallbackHandler threadInitializationHandler = null;
 		private Class<?> threadDataClass;
 		
-		public ThroughputWorkloadInstance(TimerService timerService) {
-			super(timerService);
+		public ThroughputWorkloadInstance(ServiceManager serviceManager) {
+			super(serviceManager);
 		}
 		public ThroughputWorkloadInstance setCustomData(Object customData) {
 			this.customData = customData;
@@ -374,7 +372,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 		}
 		
 		public ThroughputWorkloadInstance execute(int throughputRate, ExecuteTask runner) {
-			this.threadManager = new ThreadManager(throughputRate, maxThreads, executor, runner, this.customData, getTimerService(), this.threadInitializationHandler, this.threadTerminationHandler, this.threadDataClass, this.getWorkloadOrdinal());
+			this.threadManager = new ThreadManager(throughputRate, maxThreads, executor, runner, this.customData, getTimerService(), this.threadInitializationHandler, this.threadTerminationHandler, this.threadDataClass, this.getWorkloadOrdinal(), this);
 			this.threadManagerThread = new Thread(threadManager, "Thread Manager for " + this.getWorkloadId());
 			this.threadManagerThread.setDaemon(true);
 			this.threadManagerThread.setPriority(Thread.MAX_PRIORITY);
@@ -397,9 +395,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 	}
 
 	@Override
-	public ThroughputWorkloadInstance createInstance(TimerService timerService, WorkloadManager workloadManager) {
-		ThroughputWorkloadInstance result = new ThroughputWorkloadInstance(timerService);
-		workloadManager.registerWorkloadInstance(result);
-		return result;
+	public ThroughputWorkloadInstance createInstance(ServiceManager serviceManager) {
+		return new ThroughputWorkloadInstance(serviceManager);
 	}
 }

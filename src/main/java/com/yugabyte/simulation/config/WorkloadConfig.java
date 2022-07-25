@@ -37,7 +37,7 @@ public class WorkloadConfig {
         return new CapitalGroupWorkload();
     }
 
-    @Bean(name="CbsSportsWorklod")
+    @Bean(name="CbsSportsWorkload")
     public WorkloadSimulation cbsSportsWorkload(){
         return new CbsSportsWorkload();
     }

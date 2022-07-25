@@ -6,8 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,12 +24,6 @@ public class WorkloadManager {
 	public WorkloadManager() {
 		this.activeWorkloads = new ArrayList<WorkloadTypeInstance>();
 		this.completedWorkloads = new ArrayList<WorkloadTypeInstance>();
-	}
-
-	@PostConstruct
-	private void createAggregationWorkload() {
-		// This will self-register
-		new AggregationWorkloadType().createInstance(timerService, this);
 	}
 
 	private void addToWorkloadList(WorkloadTypeInstance instance, List<WorkloadTypeInstance> list) {

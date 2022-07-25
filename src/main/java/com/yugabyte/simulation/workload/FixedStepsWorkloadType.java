@@ -3,6 +3,7 @@ package com.yugabyte.simulation.workload;
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.Timer;
 import com.yugabyte.simulation.services.TimerService;
 
@@ -59,8 +60,8 @@ public class FixedStepsWorkloadType extends WorkloadType {
 		private volatile int currentStepNumber = 0;
 		private Thread workerThread;
 		
-		public FixedStepWorkloadInstance(TimerService timerService) {
-			super(timerService);
+		public FixedStepWorkloadInstance(ServiceManager serviceManager) {
+			super(serviceManager);
 			if (steps != null) {
 				workloadSteps = new WorkloadStep[steps.length];
 				for (int i = 0; i < steps.length; i++) {
@@ -125,6 +126,7 @@ public class FixedStepsWorkloadType extends WorkloadType {
 					catch (Exception e) {
 						this.setTerminatedByException(e);
 						currentStep.complete(timer.end(ExecutionStatus.ERROR, this.getWorkloadOrdinal()));
+						handleException(e);
 						throw e;
 					}
 				}
@@ -184,10 +186,8 @@ public class FixedStepsWorkloadType extends WorkloadType {
 	}
 
 	@Override
-	public FixedStepWorkloadInstance createInstance(TimerService timerService, WorkloadManager workloadManager) {
-		FixedStepWorkloadInstance result = new FixedStepWorkloadInstance(timerService);
-		workloadManager.registerWorkloadInstance(result);
-		return result;
+	public FixedStepWorkloadInstance createInstance(ServiceManager serviceManager) {
+		return new FixedStepWorkloadInstance(serviceManager);
 	}
 	
 }

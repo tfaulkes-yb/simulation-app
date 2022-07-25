@@ -5,12 +5,9 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Repository;
@@ -22,11 +19,9 @@ import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
-import com.yugabyte.simulation.services.TimerService;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
-import com.yugabyte.simulation.workload.ThroughputWorkloadType;
-import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
 @Repository
@@ -36,10 +31,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 	private JdbcTemplate jdbcTemplate;
 	
 	@Autowired
-	private TimerService timerService;
-	
-	@Autowired 
-	private WorkloadManager workloadManager;
+	private ServiceManager serviceManager;
 	
 	@Override
 	public String getName() {
@@ -197,7 +189,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 	}
 
 	private void createTables() {
-		createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
+		createTablesWorkloadType.createInstance(serviceManager).execute();
 	}
 	
 	private void runQueryNoTxn() {
@@ -258,7 +250,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setDelayBetweenInvocations(delay)
 			.execute(threads, target, (customData, threadData) -> {
 				runQueryNoTxn();
@@ -270,7 +262,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setDelayBetweenInvocations(delay)
 			.execute(threads, target, (customData, threadData) -> {
 				runQuery_RW_RC_Txn();
@@ -282,7 +274,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setDelayBetweenInvocations(delay)
 			.execute(threads, target, (customData, threadData) -> {
 				runQuery_RO_RR_Txn();
@@ -293,7 +285,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setDelayBetweenInvocations(delay)
 			.execute(threads, target, (customData, threadData) -> {
 				runQuery_RO_RC_Txn();
@@ -304,7 +296,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setDelayBetweenInvocations(delay)
 			.execute(threads, target, (customData, threadData) -> {
 				runQuery_RW_RR_Txn();

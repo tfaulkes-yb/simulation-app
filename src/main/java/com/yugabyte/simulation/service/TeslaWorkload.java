@@ -1,5 +1,6 @@
 package com.yugabyte.simulation.service;
 import com.yugabyte.simulation.dao.*;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.workload.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,7 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private TimerService timerService;
-
-    @Autowired
-    private WorkloadManager workloadManager;
+    private ServiceManager serviceManager;
 
 	@Override
 	public String getName() {
@@ -190,12 +188,12 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
     }
 
     private void createTables() {
-        createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
+        createTablesWorkloadType.createInstance(serviceManager).execute();
     }
 
     private void seedData(int numberToGenerate, int threads) {
         seedingWorkloadType
-                .createInstance(timerService, workloadManager)
+                .createInstance(serviceManager)
                 .execute(threads, numberToGenerate, (customData, threadData) -> {
                     UUID uuid = LoadGeneratorUtils.getUUID();
                     jdbcTemplate.update(INSERT_RECORD_TABLE1,
@@ -246,7 +244,7 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
         jdbcTemplate.setFetchSize(1000);
 
         runInstanceType
-                .createInstance(timerService, workloadManager)
+                .createInstance(serviceManager)
                 .setMaxThreads(maxThreads)
                 .execute(tps, (customData, threadData) -> {
                     UUID id = uuids.get(random.nextInt(uuids.size()));

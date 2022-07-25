@@ -20,11 +20,10 @@ import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
-import com.yugabyte.simulation.services.TimerService;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
 import com.yugabyte.simulation.workload.ThroughputWorkloadType;
-import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
 @Repository
@@ -34,10 +33,7 @@ public class CapitalGroupWorkload extends WorkloadSimulationBase implements Work
 	private JdbcTemplate jdbcTemplate;
 	
 	@Autowired
-	private TimerService timerService;
-	
-	@Autowired 
-	private WorkloadManager workloadManager;
+	private ServiceManager serviceManager;
 	
 	@Override
 	public String getName() {
@@ -251,12 +247,12 @@ public class CapitalGroupWorkload extends WorkloadSimulationBase implements Work
 	}
 
 	private void createTables() {
-		createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
+		createTablesWorkloadType.createInstance(serviceManager).execute();
 	}
 	
 	private void seedData(int numberToGenerate, int threads) {
 		seedingWorkloadType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.execute(threads, numberToGenerate, (customData, threadData) -> {
 				jdbcTemplate.update(INSERT_RECORD_CACHED_DATA,
 						LoadGeneratorUtils.getUUID(),
@@ -296,7 +292,7 @@ public class CapitalGroupWorkload extends WorkloadSimulationBase implements Work
 		jdbcTemplate.setFetchSize(1000);
 
 		bulkWorkloadType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setMaxThreads(maxThreads)
 			.execute(throughput, (customData, threadData) -> {
 				jdbcTemplate.batchUpdate(INSERT_RECORD_BULK_DATA, new BatchPreparedStatementSetter() {
@@ -385,7 +381,7 @@ public class CapitalGroupWorkload extends WorkloadSimulationBase implements Work
 		jdbcTemplate.setFetchSize(1000);
 
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setMaxThreads(maxThreads)
 			.execute(tps, (customData, threadData) -> {
 				String query = POINT_QUERY_CACHED_DATA;

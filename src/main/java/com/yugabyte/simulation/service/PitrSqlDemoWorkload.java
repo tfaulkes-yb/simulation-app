@@ -12,6 +12,7 @@ import com.yugabyte.simulation.dao.InvocationResult;
 import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
@@ -25,10 +26,7 @@ public class PitrSqlDemoWorkload extends WorkloadSimulationBase implements Workl
 	private JdbcTemplate jdbcTemplate;
 	
 	@Autowired
-	private TimerService timerService;
-	
-	@Autowired 
-	private WorkloadManager workloadManager;
+	private ServiceManager serviceManager;
 	
 	@Override
 	public String getName() {
@@ -111,12 +109,12 @@ public class PitrSqlDemoWorkload extends WorkloadSimulationBase implements Workl
 	}
 
 	private void createTables() {
-		createTablesWorkloadType.createInstance(timerService, workloadManager).execute();
+		createTablesWorkloadType.createInstance(serviceManager).execute();
 	}
 	
 	private void runSimulation(int target, int delay) {
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setDelayBetweenInvocations(delay)
 			.setCustomData(Integer.valueOf(0))
 			.execute(1, target, (customData, threadData) -> {

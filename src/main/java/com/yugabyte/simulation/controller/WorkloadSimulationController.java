@@ -77,7 +77,7 @@ public class WorkloadSimulationController {
     			System.err.printf("Could not find a workload named '%s' on '%s'\nValid workloads are:\n",
     					workloadToRun, workloadSimulation.getName());
     			for (WorkloadDesc desc : workloads) {
-    				System.err.printf("    %s (%s)\n", desc.getName(), desc.getWorkloadId());
+    				System.err.printf("    %s (%s) Params: %s\n", desc.getName(), desc.getWorkloadId(), getParamDesc(desc.getParams()));
     			}
     			exit(-1);
     		}

@@ -3,8 +3,14 @@ package com.yugabyte.simulation.workload;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.WorkloadResult;
+import com.yugabyte.simulation.service.SonosWorkload;
+import com.yugabyte.simulation.services.LoggingFileManager;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.TimerService;
 
 public abstract class WorkloadTypeInstance {
@@ -18,19 +24,22 @@ public abstract class WorkloadTypeInstance {
 	public abstract WorkloadType getType();
 	public abstract boolean isComplete();
 	private final int workloadOrdinal;
-	private final TimerService timerService;
+	private final ServiceManager serviceManager;
 	
 	private final List<TimerResult> timingResults;
-	
-	public WorkloadTypeInstance(TimerService timerService) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkloadTypeInstance.class);
+
+	public WorkloadTypeInstance(ServiceManager serviceManager) {
+		this.serviceManager = serviceManager;
 		this.startTime = System.currentTimeMillis();
 		this.workloadId = createWorkloadId(); 
 		this.status = WorkloadStatusType.SUBMITTED;
 		this.doInitialize();
 		this.status = WorkloadStatusType.EXECUTING;
 		this.timingResults = new ArrayList<TimerResult>();
-		this.workloadOrdinal = timerService.startTimingWorkload(this);
-		this.timerService = timerService;
+		this.workloadOrdinal = getTimerService().startTimingWorkload(this);
+		this.serviceManager.getWorkloadManager().registerWorkloadInstance(this);
+
 	}
 
 	protected TimerResult doAugmentTimingResult(TimerResult result) {
@@ -99,10 +108,30 @@ public abstract class WorkloadTypeInstance {
 		}
 	}
 	protected TimerService getTimerService() {
-		return timerService;
+		return serviceManager.getTimerService();
+	}
+	
+	protected LoggingFileManager getLoggingManager() {
+		return serviceManager.getLoggingFileManager();
 	}
 	protected int getWorkloadOrdinal() {
 		return this.workloadOrdinal;
+	}
+	
+	private Exception lastException = null;
+	protected void handleException(Exception e) {
+		if (LOGGER.isErrorEnabled()) {
+			if (lastException == null || lastException.getClass() != e.getClass() || 
+					(e.getStackTrace().length > 0 && lastException.getStackTrace().length > 0 && !e.getStackTrace()[0].toString().equals( lastException.getStackTrace()[0].toString()))) {
+					
+				System.err.println("Exception thrown from workload " + this.getWorkloadId() + " of type "+ this.getType().getTypeName());
+				e.printStackTrace();
+				lastException = e;
+			}
+			else {
+				System.err.print("\"");
+			}
+		}
 	}
 	
 	public List<TimerResult> getResults(long fromTime) {
@@ -143,5 +172,4 @@ public abstract class WorkloadTypeInstance {
 	public WorkloadResult getWorkloadResult(long afterTime) {
 		return new WorkloadResult(afterTime, this);
 	}
-
 }

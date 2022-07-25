@@ -2,6 +2,7 @@ package com.yugabyte.simulation.workload;
 
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.exception.MultipleAggregationWorkloadException;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.TimerService;
 
 public final class AggregationWorkloadType extends WorkloadType {
@@ -13,10 +14,10 @@ public final class AggregationWorkloadType extends WorkloadType {
 	private static final AggregationWorkloadInstanceType instance = null; 
 	private final class AggregationWorkloadInstanceType extends WorkloadTypeInstance {
 
-		public AggregationWorkloadInstanceType(TimerService timerService) {
-			super(timerService);
+		public AggregationWorkloadInstanceType(ServiceManager serviceManager) {
+			super(serviceManager);
 			if (instance != null) {
-				timerService.stopTimingWorkload(this);
+				serviceManager.getTimerService().stopTimingWorkload(this);
 				throw new MultipleAggregationWorkloadException();
 			}
 		}
@@ -59,10 +60,7 @@ public final class AggregationWorkloadType extends WorkloadType {
 	}
 	
 	@Override
-	public WorkloadTypeInstance createInstance(TimerService timerService, WorkloadManager workloadManager) {
-		AggregationWorkloadInstanceType result = new AggregationWorkloadInstanceType(timerService);
-		workloadManager.registerWorkloadInstance(result);
-		return result;
+	public WorkloadTypeInstance createInstance(ServiceManager serviceManager) {
+		return new AggregationWorkloadInstanceType(serviceManager);
 	}
-
 }

@@ -29,6 +29,7 @@ import com.yugabyte.simulation.dao.ParamType;
 import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.services.TimerType;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
@@ -43,10 +44,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	private JdbcTemplate jdbcTemplate;
 	
 	@Autowired
-	private TimerService timerService;
-	
-	@Autowired 
-	private WorkloadManager workloadManager;
+	private ServiceManager serviceManager;
 	
 	@Override
 	public String getName() {
@@ -563,7 +561,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 
 	private void createTables(boolean force) {
 		FixedStepsWorkloadType jobType = force ? createTablesWithTruncateWorkloadType : createTablesWorkloadType;
-		jobType.createInstance(timerService, workloadManager).execute((stepNum, stepName) -> {
+		jobType.createInstance(serviceManager).execute((stepNum, stepName) -> {
 			switch (stepName) {
 			case DROP_MHHMAP_STEP:
 				jdbcTemplate.execute(DROP_MHHMAP_TABLE);
@@ -589,7 +587,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		else {
 			jobType = (createOld? createIndexesNoDropOld : createIndexesNoDropNoOld);
 		}
-		jobType.createInstance(timerService, workloadManager).execute((stepNum, stepName) -> {
+		jobType.createInstance(serviceManager).execute((stepNum, stepName) -> {
 			switch (stepName) {
 			case DROP_INDEX1_STEP:
 				jdbcTemplate.execute(DROP_TOPOLOGY_INDEX);
@@ -1179,7 +1177,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 		
 		final int totalCount = percentageBackfills + percentageTopDownReads + percentageBottomUpReads + percentagePointReads; 
 		runInstanceType
-			.createInstance(timerService, workloadManager)
+			.createInstance(serviceManager)
 			.setMaxThreads(maxThreads)
 			.execute(tps, (customData, threadData) -> {
 				Random random = ThreadLocalRandom.current();
