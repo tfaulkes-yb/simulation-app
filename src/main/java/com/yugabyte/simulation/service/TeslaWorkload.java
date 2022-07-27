@@ -1,18 +1,30 @@
 package com.yugabyte.simulation.service;
-import com.yugabyte.simulation.dao.*;
-import com.yugabyte.simulation.services.ServiceManager;
-import com.yugabyte.simulation.services.TimerService;
-import com.yugabyte.simulation.workload.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+import com.yugabyte.simulation.dao.InvocationResult;
+import com.yugabyte.simulation.dao.ParamType;
+import com.yugabyte.simulation.dao.ParamValue;
+import com.yugabyte.simulation.dao.WorkloadDesc;
+import com.yugabyte.simulation.dao.WorkloadParamDesc;
+import com.yugabyte.simulation.services.ServiceManager;
+import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
+import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
+import com.yugabyte.simulation.workload.Step;
+import com.yugabyte.simulation.workload.ThroughputWorkloadType;
+import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
 @Repository
 public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSimulation {
@@ -92,12 +104,12 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
 
     public TeslaWorkload() {
         this.createTablesWorkloadType = new FixedStepsWorkloadType(
-                new FixedStepsWorkloadType.Step("Drop Table1", (a,b) -> jdbcTemplate.execute(DROP_TABLE1)),
-                new FixedStepsWorkloadType.Step("Create Table1", (a,b) -> jdbcTemplate.execute(CREATE_TABLE1)),
-                new FixedStepsWorkloadType.Step("Drop Table2", (a,b) -> jdbcTemplate.execute(DROP_TABLE2)),
-                new FixedStepsWorkloadType.Step("Create Table2", (a,b) -> jdbcTemplate.execute(CREATE_TABLE2)),
-                new FixedStepsWorkloadType.Step("Drop Table3", (a,b) -> jdbcTemplate.execute(DROP_TABLE3)),
-                new FixedStepsWorkloadType.Step("Create Table3", (a,b) -> jdbcTemplate.execute(CREATE_TABLE3))
+                new Step("Drop Table1", (a,b) -> jdbcTemplate.execute(DROP_TABLE1)),
+                new Step("Create Table1", (a,b) -> jdbcTemplate.execute(CREATE_TABLE1)),
+                new Step("Drop Table2", (a,b) -> jdbcTemplate.execute(DROP_TABLE2)),
+                new Step("Create Table2", (a,b) -> jdbcTemplate.execute(CREATE_TABLE2)),
+                new Step("Drop Table3", (a,b) -> jdbcTemplate.execute(DROP_TABLE3)),
+                new Step("Create Table3", (a,b) -> jdbcTemplate.execute(CREATE_TABLE3))
         );
 
         this.seedingWorkloadType = new FixedTargetWorkloadType();

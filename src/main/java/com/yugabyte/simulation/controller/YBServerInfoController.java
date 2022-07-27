@@ -2,22 +2,15 @@ package com.yugabyte.simulation.controller;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.YBServerInfoDAO;
 import com.yugabyte.simulation.model.YBServerModel;
-import com.yugabyte.simulation.services.ExecutionStatus;
-import com.yugabyte.simulation.services.Timer;
 import com.yugabyte.simulation.services.TimerService;
-import com.yugabyte.simulation.services.TimerType;
 
 @RestController
 public class YBServerInfoController {

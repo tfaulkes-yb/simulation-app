@@ -2,11 +2,11 @@ package com.yugabyte.simulation.service;
 
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
-import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
-import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType.FixedStepWorkloadInstance;
-import com.yugabyte.simulation.workload.FixedStepsWorkloadType.Step;
+import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType.FixedTargetWorkloadInstance;
+import com.yugabyte.simulation.workload.Step;
+import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.ThroughputWorkloadType.ThroughputWorkloadInstance;
 
 public class WorkloadInvoker {

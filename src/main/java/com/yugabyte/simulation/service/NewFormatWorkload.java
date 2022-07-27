@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
-import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
+import com.yugabyte.simulation.workload.Step;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
 @Repository
@@ -77,16 +77,16 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 					.setDescription("Create the table. If the table already exists it will be dropped")
 					.onInvoke((runner, params) -> {
 						runner.newFixedStepsInstance(
-								new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> {
+								new Step("Drop Table", (a,b) -> {
 									jdbcTemplate.execute(DROP_TABLE);	
 								}),
-								new FixedStepsWorkloadType.Step("Create Schema", (a,b) -> {
+								new Step("Create Schema", (a,b) -> {
 									jdbcTemplate.execute(CREATE_SCHEMA);
 								}),
-								new FixedStepsWorkloadType.Step("Create Table", (a,b) -> {
+								new Step("Create Table", (a,b) -> {
 									jdbcTemplate.execute(CREATE_TABLE);	
 								}),
-								new FixedStepsWorkloadType.Step("Create Index", (a,b) -> {
+								new Step("Create Index", (a,b) -> {
 									jdbcTemplate.execute(CREATE_INDEX);	
 								})
 						)
@@ -109,7 +109,7 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 
 						runner.newFixedTargetInstance()
 							.setCustomData(currentValue)
-							.execute(params[1].getIntValue(), params[0].getIntValue(),
+							.execute(params.asInt(1), params.asInt(0),
 									(customData, threadData) -> {
 								insertRecord((AtomicLong)customData);
 								return null;
@@ -128,8 +128,8 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 						jdbcTemplate.setFetchSize(1000);
 
 						runner.newFixedTargetInstance()
-							.setDelayBetweenInvocations(params[1].getIntValue())
-							.execute(params[2].getIntValue(), params[0].getIntValue(), (customData, threadData) -> {
+							.setDelayBetweenInvocations(params.asInt(1))
+							.execute(params.asInt(2), params.asInt(0), (customData, threadData) -> {
 								runQueryNoTxn();
 								return null;
 							});
@@ -147,8 +147,8 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 						jdbcTemplate.setFetchSize(1000);
 
 						runner.newThroughputWorkloadInstance()
-							.setMaxThreads(params[1].getIntValue())
-							.execute(params[0].getIntValue(), (customData, threadData) -> {
+							.setMaxThreads(params.asInt(1))
+							.execute(params.asInt(0), (customData, threadData) -> {
 								runQueryNoTxn();
 							});
 

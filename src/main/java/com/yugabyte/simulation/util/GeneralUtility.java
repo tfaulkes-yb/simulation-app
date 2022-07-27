@@ -1,11 +1,11 @@
 package com.yugabyte.simulation.util;
 
-import org.json.JSONObject;
-
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+
+import org.json.JSONObject;
 
 public class GeneralUtility {
     private static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

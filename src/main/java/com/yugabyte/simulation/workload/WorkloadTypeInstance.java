@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.dao.WorkloadResult;
-import com.yugabyte.simulation.service.SonosWorkload;
 import com.yugabyte.simulation.services.LoggingFileManager;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.TimerService;

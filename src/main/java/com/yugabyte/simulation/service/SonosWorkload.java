@@ -30,11 +30,8 @@ import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.services.ServiceManager;
-import com.yugabyte.simulation.services.TimerService;
-import com.yugabyte.simulation.services.TimerType;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.ThroughputWorkloadType;
-import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
 @Repository

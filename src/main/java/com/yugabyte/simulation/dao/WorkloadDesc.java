@@ -1,18 +1,15 @@
 package com.yugabyte.simulation.dao;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.yugabyte.simulation.service.WorkloadInvoker;
-import com.yugabyte.simulation.services.TimerType;
 
 public class WorkloadDesc {
 	
 	public interface Invoker {
-		void invoke(WorkloadInvoker workloadInvoker, ParamValue[] params);
+		void invoke(WorkloadInvoker workloadInvoker, ParamHolder params);
 	}
 	private final String workloadId;
 	private final String name;

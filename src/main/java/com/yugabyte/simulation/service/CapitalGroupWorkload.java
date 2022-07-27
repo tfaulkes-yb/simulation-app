@@ -23,6 +23,7 @@ import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
+import com.yugabyte.simulation.workload.Step;
 import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
@@ -163,10 +164,10 @@ public class CapitalGroupWorkload extends WorkloadSimulationBase implements Work
 	
 	public CapitalGroupWorkload() {
 		this.createTablesWorkloadType = new FixedStepsWorkloadType(
-				new FixedStepsWorkloadType.Step("Drop Main Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE_CACHED_DATA)),
-				new FixedStepsWorkloadType.Step("Drop Bulk Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE_BULK_DATA)),
-				new FixedStepsWorkloadType.Step("Create Main Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE_CACHED_DATA)),
-				new FixedStepsWorkloadType.Step("Create Bulk Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE_BULK_DATA))
+				new Step("Drop Main Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE_CACHED_DATA)),
+				new Step("Drop Bulk Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE_BULK_DATA)),
+				new Step("Create Main Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE_CACHED_DATA)),
+				new Step("Create Bulk Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE_BULK_DATA))
 		);
 				
 		this.seedingWorkloadType = new FixedTargetWorkloadType();
@@ -288,7 +289,6 @@ public class CapitalGroupWorkload extends WorkloadSimulationBase implements Work
 	}
 	
 	private void bulkDataLoad(int throughput, int batchSize, int maxThreads) {
-		Random random = ThreadLocalRandom.current();
 		jdbcTemplate.setFetchSize(1000);
 
 		bulkWorkloadType

@@ -5,7 +5,6 @@ import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.Timer;
-import com.yugabyte.simulation.services.TimerService;
 
 public class FixedStepsWorkloadType extends WorkloadType {
 	private final String[] steps;
@@ -15,15 +14,6 @@ public class FixedStepsWorkloadType extends WorkloadType {
 		public void run(int stepNum, String stepName);
 	};
 	
-	public static class Step{
-		private String stepName;
-		private ExecuteStep step;
-		public Step(String stepName, ExecuteStep step) {
-			this.step = step;
-			this.stepName = stepName;
-		}
-	}
-
 	public static class FixedStepsWorkloadResult extends WorkloadResult {
 		private final int currentStepNumber;
 		private final WorkloadStep[] steps;

@@ -1,12 +1,13 @@
 package com.yugabyte.simulation.dao;
 
-import com.yugabyte.simulation.model.YBServerModel;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.yugabyte.simulation.model.YBServerModel;
 
 @Repository
 public class YBServerInfoDAOImpl implements YBServerInfoDAO{

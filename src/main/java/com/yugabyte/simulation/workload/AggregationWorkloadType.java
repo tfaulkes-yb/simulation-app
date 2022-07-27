@@ -3,7 +3,6 @@ package com.yugabyte.simulation.workload;
 import com.yugabyte.simulation.dao.TimerResult;
 import com.yugabyte.simulation.exception.MultipleAggregationWorkloadException;
 import com.yugabyte.simulation.services.ServiceManager;
-import com.yugabyte.simulation.services.TimerService;
 
 public final class AggregationWorkloadType extends WorkloadType {
 

@@ -18,6 +18,7 @@ import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
+import com.yugabyte.simulation.workload.Step;
 import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
@@ -73,12 +74,12 @@ public class SimpleSelectWorkload extends WorkloadSimulationBase implements Work
 //				CREATE_TABLE_STEP);
 		
 		this.createTablesWorkloadType = new FixedStepsWorkloadType(
-				new FixedStepsWorkloadType.Step("Pause 1", (a,b) -> { try { Thread.sleep(5000);} catch (Exception e) {} }),
-				new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),
-				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(2000);} catch (Exception e) {} }),
-				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),
-				new FixedStepsWorkloadType.Step("Create Index", (a,b) -> jdbcTemplate.execute(CREATE_INDEX)),
-				new FixedStepsWorkloadType.Step("Pause 2", (a,b) -> { try { Thread.sleep(3000);} catch (Exception e) {} })
+				new Step("Pause 1", (a,b) -> { try { Thread.sleep(5000);} catch (Exception e) {} }),
+				new Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),
+				new Step("Pause 2", (a,b) -> { try { Thread.sleep(2000);} catch (Exception e) {} }),
+				new Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),
+				new Step("Create Index", (a,b) -> jdbcTemplate.execute(CREATE_INDEX)),
+				new Step("Pause 2", (a,b) -> { try { Thread.sleep(3000);} catch (Exception e) {} })
 		);
 				
 		this.seedingWorkloadType = new FixedTargetWorkloadType();

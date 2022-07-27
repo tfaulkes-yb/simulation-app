@@ -24,6 +24,7 @@ import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
+import com.yugabyte.simulation.workload.Step;
 import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
@@ -89,16 +90,16 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 	
 	public CbsSportsWorkload() {
 		this.createTablesWorkloadType = new FixedStepsWorkloadType(
-				new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> {
+				new Step("Drop Table", (a,b) -> {
 					jdbcTemplate.execute(DROP_TABLE);	
 				}),
-				new FixedStepsWorkloadType.Step("Create Schema", (a,b) -> {
+				new Step("Create Schema", (a,b) -> {
 					jdbcTemplate.execute(CREATE_SCHEMA);
 				}),
-				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> {
+				new Step("Create Table", (a,b) -> {
 					jdbcTemplate.execute(CREATE_TABLE);	
 				}),
-				new FixedStepsWorkloadType.Step("Create Index", (a,b) -> {
+				new Step("Create Index", (a,b) -> {
 					jdbcTemplate.execute(CREATE_INDEX);	
 				})
 		);

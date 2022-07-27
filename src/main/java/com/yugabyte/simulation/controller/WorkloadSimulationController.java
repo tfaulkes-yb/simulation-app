@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yugabyte.simulation.dao.InvocationResult;
+import com.yugabyte.simulation.dao.ParamHolder;
 import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.SystemPreferences;
 import com.yugabyte.simulation.dao.WorkloadDesc;
@@ -28,7 +29,6 @@ import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.service.WorkloadInvoker;
 import com.yugabyte.simulation.service.WorkloadSimulation;
-import com.yugabyte.simulation.services.LoggingFileManager;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.SystemPreferencesService;
 import com.yugabyte.simulation.workload.WorkloadManager;
@@ -113,7 +113,7 @@ public class WorkloadSimulationController {
 
     		if (workload.getInvoker() != null) {
     			WorkloadInvoker invoker = new WorkloadInvoker(serviceManager);
-    			workload.getInvoker().invoke(invoker, paramsToUse);
+    			workload.getInvoker().invoke(invoker, new ParamHolder(paramsToUse));
     		}
     		else {
     			workloadSimulation.invokeWorkload(workload.getWorkloadId(), paramsToUse);
@@ -247,7 +247,7 @@ public class WorkloadSimulationController {
 		for (WorkloadDesc aWorkload : allWorkloads) {
 			if (aWorkload.getWorkloadId().equals(workload) && aWorkload.getInvoker() != null) {
 				try {
-					aWorkload.getInvoker().invoke(new WorkloadInvoker(serviceManager), params);
+					aWorkload.getInvoker().invoke(new WorkloadInvoker(serviceManager), new ParamHolder(params));
 					return new InvocationResult("Ok");
 				}
 				catch (Exception e) {

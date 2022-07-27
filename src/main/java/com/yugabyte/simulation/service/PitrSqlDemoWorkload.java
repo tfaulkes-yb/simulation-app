@@ -13,10 +13,9 @@ import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.services.ServiceManager;
-import com.yugabyte.simulation.services.TimerService;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
-import com.yugabyte.simulation.workload.WorkloadManager;
+import com.yugabyte.simulation.workload.Step;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
 @Repository
@@ -56,10 +55,10 @@ public class PitrSqlDemoWorkload extends WorkloadSimulationBase implements Workl
 	
 	public PitrSqlDemoWorkload() {
 		this.createTablesWorkloadType = new FixedStepsWorkloadType(
-				new FixedStepsWorkloadType.Step("Drop Table", (a,b) -> {
+				new Step("Drop Table", (a,b) -> {
 					jdbcTemplate.execute(DROP_TABLE);	
 				}),
-				new FixedStepsWorkloadType.Step("Create Table", (a,b) -> {
+				new Step("Create Table", (a,b) -> {
 					jdbcTemplate.execute(CREATE_TABLE);	
 				})
 		);
