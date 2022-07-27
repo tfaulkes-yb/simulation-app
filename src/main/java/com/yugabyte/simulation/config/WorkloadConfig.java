@@ -2,6 +2,7 @@ package com.yugabyte.simulation.config;
 
 import com.yugabyte.simulation.service.CapitalGroupWorkload;
 import com.yugabyte.simulation.service.CbsSportsWorkload;
+import com.yugabyte.simulation.service.NewFormatWorkload;
 import com.yugabyte.simulation.service.PitrSqlDemoWorkload;
 import com.yugabyte.simulation.service.SimpleSelectWorkload;
 import com.yugabyte.simulation.service.SonosWorkload;
@@ -40,5 +41,10 @@ public class WorkloadConfig {
     @Bean(name="CbsSportsWorkload")
     public WorkloadSimulation cbsSportsWorkload(){
         return new CbsSportsWorkload();
+    }
+
+    @Bean(name="NewFormatWorkload")
+    public WorkloadSimulation newFormatWorkload(){
+        return new NewFormatWorkload();
     }
 }

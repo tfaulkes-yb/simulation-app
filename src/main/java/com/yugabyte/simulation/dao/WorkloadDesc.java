@@ -5,19 +5,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.yugabyte.simulation.service.WorkloadInvoker;
 import com.yugabyte.simulation.services.TimerType;
 
 public class WorkloadDesc {
+	
+	public interface Invoker {
+		void invoke(WorkloadInvoker workloadInvoker, ParamValue[] params);
+	}
 	private final String workloadId;
 	private final String name;
-	private final String description;
+	private String description;
 	private final List<WorkloadParamDesc> params;
+	
+	@JsonIgnore
+	private transient Invoker invoker;
+	
 	
 	public WorkloadDesc(String workloadId, String name, String description, WorkloadParamDesc ... params) {
 		super();
 		this.workloadId = workloadId;
 		this.name = name;
 		this.description = description;
+		this.params = Arrays.asList(params);
+	}
+
+	public WorkloadDesc(String workloadId, String name, WorkloadParamDesc ... params) {
+		super();
+		this.workloadId = workloadId;
+		this.name = name;
 		this.params = Arrays.asList(params);
 	}
 
@@ -35,5 +52,20 @@ public class WorkloadDesc {
 
 	public List<WorkloadParamDesc> getParams() {
 		return params;
+	}
+	
+	public WorkloadDesc setDescription(String description) {
+		this.description = description;
+		return this;
+	}
+	
+	public WorkloadDesc onInvoke(Invoker invoker) {
+		this.invoker = invoker;
+		return this;
+	}
+	
+	@JsonIgnore
+	public Invoker getInvoker() {
+		return invoker;
 	}
 }

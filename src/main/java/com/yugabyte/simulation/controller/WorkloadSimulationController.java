@@ -26,8 +26,10 @@ import com.yugabyte.simulation.dao.SystemPreferences;
 import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.dao.WorkloadResult;
+import com.yugabyte.simulation.service.WorkloadInvoker;
 import com.yugabyte.simulation.service.WorkloadSimulation;
 import com.yugabyte.simulation.services.LoggingFileManager;
+import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.SystemPreferencesService;
 import com.yugabyte.simulation.workload.WorkloadManager;
 import com.yugabyte.simulation.workload.WorkloadTypeInstance;
@@ -44,6 +46,9 @@ public class WorkloadSimulationController {
     @Autowired
     private ApplicationContext appContext;
     
+    @Autowired
+    private ServiceManager serviceManager;
+    
     // Generic interface, to be populated with class loaded dynamically?
     @Autowired
     @Resource(name="${spring.workload:sonosWorkload}")    
@@ -53,6 +58,8 @@ public class WorkloadSimulationController {
     private static final String WORKLOAD_PARAM = "workload";
     private static final String WORKLOAD_PARAMS = "params";
     private static final String LOGGING_DIR_PARAM = "loggingDir";
+
+    private List<WorkloadDesc> workloads = null;
 
     private class WorkloadRunner implements Runnable {
     	private ParamValue[] paramsToUse;
@@ -103,8 +110,14 @@ public class WorkloadSimulationController {
     		for (int i = 0; i < paramsToUse.length; i++) {
     			System.out.printf("% 4d: %s = %s\n", i+1, neededParams.get(i).getName(), paramsToUse[i].toString());
     		}
-    		
-			workloadSimulation.invokeWorkload(workload.getWorkloadId(), paramsToUse);
+
+    		if (workload.getInvoker() != null) {
+    			WorkloadInvoker invoker = new WorkloadInvoker(serviceManager);
+    			workload.getInvoker().invoke(invoker, paramsToUse);
+    		}
+    		else {
+    			workloadSimulation.invokeWorkload(workload.getWorkloadId(), paramsToUse);
+    		}
 			
 	    	// Autoterminate the spring boot process
 	    	try {
@@ -220,13 +233,28 @@ public class WorkloadSimulationController {
 	}
 
     @GetMapping("get-workloads")
-    public List<WorkloadDesc> getWorkloads() {
-    	return workloadSimulation.getWorkloads();
+    public synchronized List<WorkloadDesc> getWorkloads() {
+    	if (workloads == null) {
+    		this.workloads = workloadSimulation.getWorkloads();
+    	}
+    	return workloads;
     }
 
     @PostMapping("/invoke-workload/{workload}") 
     @ResponseBody
     public InvocationResult invokeWorkload(@PathVariable String workload, @RequestBody ParamValue[] params) {
+    	List<WorkloadDesc> allWorkloads = getWorkloads();
+		for (WorkloadDesc aWorkload : allWorkloads) {
+			if (aWorkload.getWorkloadId().equals(workload) && aWorkload.getInvoker() != null) {
+				try {
+					aWorkload.getInvoker().invoke(new WorkloadInvoker(serviceManager), params);
+					return new InvocationResult("Ok");
+				}
+				catch (Exception e) {
+					return new InvocationResult(e);
+				}
+			}
+		}
     	return workloadSimulation.invokeWorkload(workload, params);
     }
     

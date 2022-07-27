@@ -8,6 +8,6 @@ import com.yugabyte.simulation.dao.WorkloadDesc;
 
 public interface WorkloadSimulation {
 	public List<WorkloadDesc> getWorkloads();
-	public InvocationResult invokeWorkload(String workloadId, ParamValue[] value);
+	public default InvocationResult invokeWorkload(String workloadId, ParamValue[] value) {return null;};
 	public String getName();
 }

@@ -4,8 +4,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,6 +24,7 @@ import com.yugabyte.simulation.dao.WorkloadParamDesc;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.workload.FixedStepsWorkloadType;
 import com.yugabyte.simulation.workload.FixedTargetWorkloadType;
+import com.yugabyte.simulation.workload.ThroughputWorkloadType;
 import com.yugabyte.simulation.workload.WorkloadSimulationBase;
 
 @Repository
@@ -62,8 +65,17 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 
 	private final String QUERY = "select SUBSCRIPTION_ID, CUST_ID, MCODE, MPID, SUBSCRIBED_IND, OPT_IN_DATE, OPT_OUT_DATE, OPT_IN_SOURCE from PSUSER.NEWSLETTER_SUBSCRIPTIONS where CUST_ID = ? and SUBSCRIBED_IND = 1 /** SportyApi **/";
 	
+	private final String INSERT = 
+			"insert into psuser.newsletter_subscriptions ("
+			+ "subscription_id, cust_id, mpid, mcode, subscribed_ind,"
+			+ "opt_in_date, opt_out_date, opt_in_source)"
+			+ " values "
+			+ "(?, ?, ?, ?, ?, ?, ?, ?);";
+	
 	private enum WorkloadType {
 		CREATE_TABLES, 
+		SEED_DATA,
+		UNBOUNDED_SIMULATION,
 		RUN_SIMULATION,
 		RUN_SIMULATION_RO_RR,
 		RUN_SIMULATION_RO_RC,
@@ -73,6 +85,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 	
 	private final FixedStepsWorkloadType createTablesWorkloadType;
 	private final FixedTargetWorkloadType runInstanceType;
+	private final ThroughputWorkloadType throughtputType;
 	
 	public CbsSportsWorkload() {
 		this.createTablesWorkloadType = new FixedStepsWorkloadType(
@@ -90,6 +103,7 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 				})
 		);
 				
+		this.throughtputType = new ThroughputWorkloadType();
 		this.runInstanceType = new FixedTargetWorkloadType();
 	}
 	
@@ -99,13 +113,21 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 			"Create the table. If the table already exists it will be dropped"
 		);
 	
-	private WorkloadDesc runningWorkload = new WorkloadDesc(
-			WorkloadType.RUN_SIMULATION.toString(),
-			"Simulation",
+	private WorkloadDesc unboundedWorkload = new WorkloadDesc(
+			WorkloadType.UNBOUNDED_SIMULATION.toString(),
+			"Unbounded Simulation",
 			"Run a simulation of a simple table",
 			new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
 			new WorkloadParamDesc("Delay", 0, 1000000, 0),
 			new WorkloadParamDesc("Threads", 1, 500, 32)
+		);
+	
+	private WorkloadDesc runningWorkload = new WorkloadDesc(
+			WorkloadType.RUN_SIMULATION.toString(),
+			"Simulation",
+			"Run a simulation of a simple table",
+			new WorkloadParamDesc("TPS", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("MaxThreads", 1, 500, 32)
 		);
 	
 	private WorkloadDesc runningWorkload_RO_RR = new WorkloadDesc(
@@ -144,10 +166,19 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 			new WorkloadParamDesc("Threads", 1, 500, 32)
 		);
 	
+	private WorkloadDesc seedDataWorkload = new WorkloadDesc(
+			WorkloadType.SEED_DATA.toString(),
+			"Seed the data",
+			"Create sample data",
+			new WorkloadParamDesc("Number of records", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("Threads", 1, 500, 32)
+		);
+	
 	@Override
 	public List<WorkloadDesc> getWorkloads() {
 		return Arrays.asList(
-			createTablesWorkload, runningWorkload, runningWorkload_RO_RR, runningWorkload_RO_RC, runningWorkload_RW_RC, runningWorkload_RW_RR
+			createTablesWorkload, seedDataWorkload, unboundedWorkload, runningWorkload, 
+			runningWorkload_RO_RR, runningWorkload_RO_RC, runningWorkload_RW_RC, runningWorkload_RW_RR
 		);
 	}
 	
@@ -160,6 +191,14 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 				this.createTables();
 				return new InvocationResult("Ok");
 			
+			case UNBOUNDED_SIMULATION:
+				this.unboundedSimulation(values[0].getIntValue(), values[1].getIntValue());
+				return new InvocationResult("Ok");
+				
+			case SEED_DATA:
+				this.seedData(values[0].getIntValue(), values[1].getIntValue());
+				return new InvocationResult("Ok");
+				
 			case RUN_SIMULATION:
 				this.runSimulation(values[0].getIntValue(), values[1].getIntValue(), values[2].getIntValue());
 				return new InvocationResult("Ok");
@@ -192,6 +231,21 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 		createTablesWorkloadType.createInstance(serviceManager).execute();
 	}
 	
+	private void insertRecord(AtomicLong currentCounter) {
+		jdbcTemplate.update(INSERT, new Object[] {
+			currentCounter.getAndIncrement(),
+			LoadGeneratorUtils.getLong(1000, 30_000_00),
+			LoadGeneratorUtils.getLong(10, 500),
+			LoadGeneratorUtils.getHexString(7),
+			LoadGeneratorUtils.getInt(0, 2),
+			new Date(),
+			new Date(),
+			null
+		}, new int[] {
+			Types.BIGINT, Types.BIGINT, Types.BIGINT, Types.VARCHAR, 
+			Types.SMALLINT, Types.TIMESTAMP, Types.TIMESTAMP, Types.VARCHAR
+		});
+	}
 	private void runQueryNoTxn() {
 		int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
 		jdbcTemplate.query(QUERY, new Object[] {custNum}, new int[] {Types.INTEGER},
@@ -243,6 +297,32 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 				@Override
 				public void processRow(ResultSet rs) throws SQLException {
 				}
+			});
+	}
+
+	private void seedData(int target, int threads) {
+		jdbcTemplate.setFetchSize(1000);
+
+		final AtomicLong currentValue = new AtomicLong();
+		jdbcTemplate.query("select max(subscription_id) from psuser.newsletter_subscriptions",
+				(rs) -> { currentValue.set(rs.getLong(1)+1); } );
+		runInstanceType
+			.createInstance(serviceManager)
+			.setCustomData(currentValue)
+			.execute(threads, target, (customData, threadData) -> {
+				insertRecord((AtomicLong)customData);
+				return null;
+			});
+	}
+
+	private void unboundedSimulation(int targetTps, int maxThreads) {
+		jdbcTemplate.setFetchSize(1000);
+
+		throughtputType
+			.createInstance(serviceManager)
+			.setMaxThreads(maxThreads)
+			.execute(targetTps, (customData, threadData) -> {
+				runQueryNoTxn();
 			});
 	}
 	
