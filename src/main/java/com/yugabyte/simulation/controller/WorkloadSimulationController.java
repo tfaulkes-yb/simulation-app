@@ -55,7 +55,7 @@ public class WorkloadSimulationController {
     // we can use @Qualifier as well
     private WorkloadSimulation workloadSimulation;
     
-    private static final String WORKLOAD_PARAM = "workload";
+    private static final String WORKLOAD_TYPE = "workloadType";
     private static final String WORKLOAD_PARAMS = "params";
     private static final String LOGGING_DIR_PARAM = "loggingDir";
 
@@ -223,7 +223,7 @@ public class WorkloadSimulationController {
     	}
 
     	// See if there is a workload to run
-    	String workloadToRun = System.getProperty(WORKLOAD_PARAM);
+    	String workloadToRun = System.getProperty(WORKLOAD_TYPE);
     	if (workloadToRun != null) {
     		
     		Thread thread = new Thread(new WorkloadRunner(workloadToRun));
