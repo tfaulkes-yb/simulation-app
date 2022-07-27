@@ -77,18 +77,10 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 					.setDescription("Create the table. If the table already exists it will be dropped")
 					.onInvoke((runner, params) -> {
 						runner.newFixedStepsInstance(
-								new Step("Drop Table", (a,b) -> {
-									jdbcTemplate.execute(DROP_TABLE);	
-								}),
-								new Step("Create Schema", (a,b) -> {
-									jdbcTemplate.execute(CREATE_SCHEMA);
-								}),
-								new Step("Create Table", (a,b) -> {
-									jdbcTemplate.execute(CREATE_TABLE);	
-								}),
-								new Step("Create Index", (a,b) -> {
-									jdbcTemplate.execute(CREATE_INDEX);	
-								})
+							new Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),	
+							new Step("Create Schema", (a,b) -> jdbcTemplate.execute(CREATE_SCHEMA)),
+							new Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),	
+							new Step("Create Index", (a,b) -> jdbcTemplate.execute(CREATE_INDEX))	
 						)
 						.execute();
 					}),
