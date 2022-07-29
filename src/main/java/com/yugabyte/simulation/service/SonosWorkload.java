@@ -461,7 +461,7 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			new WorkloadParamDesc("Hierarchy Depth 7", true),
 			new WorkloadParamDesc("Hierarchy Depth 8", true),
 			new WorkloadParamDesc("Max Threads", 1, 500, 64),
-			new WorkloadParamDesc("Use hierarchial query", false),
+//			new WorkloadParamDesc("Use hierarchial query", false),
 			new WorkloadParamDesc("Use UserIds in hierarchy query", true)
 			);
 	
@@ -480,7 +480,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 	@Override
 	public List<WorkloadDesc> getWorkloads() {
 		return Arrays.asList(
-			createTablesWorkload, createIndexesWorkload, loadDataWorkload, runningWorkload, runTopDownQuery, runBottomUpQuery
+			createTablesWorkload
+//				, createIndexesWorkload
+				, loadDataWorkload, runningWorkload, runTopDownQuery, runBottomUpQuery
 		);
 	}
 
@@ -535,8 +537,8 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 						values[5].getBoolValue(),
 						this.formInClause(values),
 						values[13].getIntValue(),
-						values[14].getBoolValue(),
-						values[15].getBoolValue()
+						//values[14].getBoolValue(),
+						values[14].getBoolValue()
 					);
 				return new InvocationResult("Ok");
 
@@ -1154,8 +1156,9 @@ public class SonosWorkload extends WorkloadSimulationBase implements WorkloadSim
 			final boolean localReads,
 			final String inClause,
 			final int maxThreads,
-			final boolean useRecursiveQuery,
+//			final boolean useRecursiveQuery,
 			final boolean useQueryWithUserIds) {
+		boolean useRecursiveQuery = false;// setting this option as false
 		
 		System.out.println("**** Preloading data...");
 		final List<UUID> users = getUserList(inClause);
