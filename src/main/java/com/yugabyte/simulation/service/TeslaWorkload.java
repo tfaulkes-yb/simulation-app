@@ -37,7 +37,7 @@ public class TeslaWorkload  extends WorkloadSimulationBase implements WorkloadSi
 
 	@Override
 	public String getName() {
-		return "Sonos";
+		return "Tesla";
 	}
 
     private static final String CREATE_TABLE1 = "create table if not exists table1(\n" +
