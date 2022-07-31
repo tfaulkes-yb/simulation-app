@@ -14,6 +14,7 @@ public class WorkloadResult {
 	private final long startTime;
 	private final long endTime;
 	private final String status;
+	private final String description;
 	
 	public WorkloadResult(long fromTime, WorkloadTypeInstance instance) {
 		this.workloadId = instance.getWorkloadId();
@@ -29,6 +30,7 @@ public class WorkloadResult {
 		else {
 			this.results = new ArrayList<TimerResult>();
 		}
+		this.description = instance.getDescription();
 	}
 
 	public String getWorkloadId() {
@@ -61,5 +63,9 @@ public class WorkloadResult {
 	
 	public List<TimerResult> getResults() {
 		return results;
+	}
+	
+	public String getDescription() {
+		return description;
 	}
 }

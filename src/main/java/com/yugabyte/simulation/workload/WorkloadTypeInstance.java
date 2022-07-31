@@ -1,12 +1,16 @@
 package com.yugabyte.simulation.workload;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.TimerResult;
+import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.services.LoggingFileManager;
 import com.yugabyte.simulation.services.ServiceManager;
@@ -17,6 +21,7 @@ public abstract class WorkloadTypeInstance {
 	private Exception terminatingException = null;
 	
 	private final String workloadId;
+	private String description;
 	private final long startTime;
 	private long endTime = -1;
 
@@ -38,7 +43,13 @@ public abstract class WorkloadTypeInstance {
 		this.timingResults = new ArrayList<TimerResult>();
 		this.workloadOrdinal = getTimerService().startTimingWorkload(this);
 		this.serviceManager.getWorkloadManager().registerWorkloadInstance(this);
-
+	}
+	
+	public WorkloadTypeInstance(ServiceManager serviceManager, WorkloadDesc workload, ParamValue[] params) {
+		this(serviceManager);
+		if (workload != null) {
+			this.setDescriptionFromParams(workload, params);
+		}
 	}
 
 	protected TimerResult doAugmentTimingResult(TimerResult result) {
@@ -170,5 +181,25 @@ public abstract class WorkloadTypeInstance {
 	
 	public WorkloadResult getWorkloadResult(long afterTime) {
 		return new WorkloadResult(afterTime, this);
+	}
+	
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescriptionFromParams(WorkloadDesc workload, ParamValue []params) {
+		StringBuffer sb = new StringBuffer();
+		sb.append(workload.getName()).append(" (");
+		for (int i = 0; i < workload.getParams().size(); i++) {
+			sb.append(workload.getParams().get(i).getName()).append(":").append(params[i].toString());
+			sb.append(", ");
+		}
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		sb.append(" started at:").append(sdf.format(new Date(this.startTime)));
+		sb.append(")");
+		this.setDescription(sb.toString());
+	}
+	public void setDescription(String description) {
+		this.description = description;
 	}
 }

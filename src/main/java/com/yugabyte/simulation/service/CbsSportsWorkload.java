@@ -118,17 +118,17 @@ public class CbsSportsWorkload extends WorkloadSimulationBase implements Workloa
 			WorkloadType.UNBOUNDED_SIMULATION.toString(),
 			"Unbounded Simulation",
 			"Run a simulation of a simple table",
-			new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
-			new WorkloadParamDesc("Delay", 0, 1000000, 0),
-			new WorkloadParamDesc("Threads", 1, 500, 32)
+			new WorkloadParamDesc("TPS", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("MaxThreads", 1, 500, 32)
 		);
 	
 	private WorkloadDesc runningWorkload = new WorkloadDesc(
 			WorkloadType.RUN_SIMULATION.toString(),
 			"Simulation",
 			"Run a simulation of a simple table",
-			new WorkloadParamDesc("TPS", 1, Integer.MAX_VALUE, 1000),
-			new WorkloadParamDesc("MaxThreads", 1, 500, 32)
+			new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
+			new WorkloadParamDesc("Delay", 0, 1000000, 0),
+			new WorkloadParamDesc("Threads", 1, 500, 32)
 		);
 	
 	private WorkloadDesc runningWorkload_RO_RR = new WorkloadDesc(

@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.yugabyte.simulation.service.WorkloadInvoker;
+import com.yugabyte.simulation.services.ServiceManager;
 
 public class WorkloadDesc {
 	
@@ -59,6 +60,10 @@ public class WorkloadDesc {
 	public WorkloadDesc onInvoke(Invoker invoker) {
 		this.invoker = invoker;
 		return this;
+	}
+	
+	public void invoke(ServiceManager serviceManager, ParamValue[] params) {
+		this.invoker.invoke(new WorkloadInvoker(serviceManager, this, params), new ParamHolder(params));
 	}
 	
 	@JsonIgnore

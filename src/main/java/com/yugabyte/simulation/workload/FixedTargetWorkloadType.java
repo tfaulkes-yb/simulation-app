@@ -6,7 +6,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.TimerResult;
+import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.services.ExecutionStatus;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.Timer;
@@ -129,7 +131,11 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		private long target = 0;
 		private Object customData = null;
 		private int invocationDelayMs = 0;
-		
+
+		public FixedTargetWorkloadInstance(ServiceManager serviceManager, WorkloadDesc workload, ParamValue[] params) {
+			super(serviceManager, workload, params);
+		}
+
 		public FixedTargetWorkloadInstance(ServiceManager serviceManager) {
 			super(serviceManager);
 		}
@@ -227,8 +233,19 @@ public class FixedTargetWorkloadType extends WorkloadType {
 		return "FIXED_TARGET";
 	}
 
+
 	@Override
 	public FixedTargetWorkloadInstance createInstance(ServiceManager serviceManager) {
-		return new FixedTargetWorkloadInstance(serviceManager);
+		return this.createInstance(serviceManager, null, null);
+	}
+
+	@Override
+	public FixedTargetWorkloadInstance createInstance(ServiceManager serviceManager, WorkloadDesc workload, ParamValue[] params) {
+		if (workload != null && params != null) {
+			return new FixedTargetWorkloadInstance(serviceManager, workload, params);
+		}
+		else {
+			return new FixedTargetWorkloadInstance(serviceManager);
+		}
 	}
 }

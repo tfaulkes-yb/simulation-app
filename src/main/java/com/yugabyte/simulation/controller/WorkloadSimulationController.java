@@ -112,7 +112,7 @@ public class WorkloadSimulationController {
     		}
 
     		if (workload.getInvoker() != null) {
-    			WorkloadInvoker invoker = new WorkloadInvoker(serviceManager);
+    			WorkloadInvoker invoker = new WorkloadInvoker(serviceManager, workload, paramsToUse);
     			workload.getInvoker().invoke(invoker, new ParamHolder(paramsToUse));
     		}
     		else {
@@ -247,7 +247,7 @@ public class WorkloadSimulationController {
 		for (WorkloadDesc aWorkload : allWorkloads) {
 			if (aWorkload.getWorkloadId().equals(workload) && aWorkload.getInvoker() != null) {
 				try {
-					aWorkload.getInvoker().invoke(new WorkloadInvoker(serviceManager), new ParamHolder(params));
+					aWorkload.invoke(serviceManager, params);
 					return new InvocationResult("Ok");
 				}
 				catch (Exception e) {

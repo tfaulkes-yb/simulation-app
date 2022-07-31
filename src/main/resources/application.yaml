@@ -14,6 +14,7 @@ spring:
       maxLifeTime: ${max-life-time:3600000}
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
       data-source-properties:
+#        preferQueryMode: org.postgresql.jdbc.PreferQueryMode.EXTENDED_CACHE_EVERYTHING
         serverName: ${node:127.0.0.1}
         portNumber: ${port:5433}
         databaseName: ${dbname:yugabyte}
@@ -22,15 +23,13 @@ spring:
         #sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
 
 logging.level:
+  root: ERROR
   java.sql: DEBUG
   com.zaxxer.hikari: TRACE
-  com.yugabyte: ERROR
-  org.hibernate.SQL: DEBUG
-  org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  com.yugabyte: DEBUG
   com.yugabyte.simulation.workload: DEBUG
-  org.postgresql: DEBUG
-  org.springframework.jdbc.core: ERROR  
-  
+  org.springframework.jdbc.core: ERROR 
+    
 server:
   port: 8080
   

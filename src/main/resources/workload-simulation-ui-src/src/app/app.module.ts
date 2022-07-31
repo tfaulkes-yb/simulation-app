@@ -13,8 +13,10 @@ import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { InputTextModule } from 'primeng/inputtext';
+import { DropdownModule } from 'primeng/dropdown';
 import { MenuModule } from 'primeng/menu'
 import { PanelModule } from 'primeng/panel';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { SliderModule} from 'primeng/slider';
 import { StepsModule } from 'primeng/steps'
 import { FormsModule } from '@angular/forms';
@@ -45,6 +47,7 @@ import { FixedTargetWorkloadComponent } from './components/fixed-target-workload
     BrowserAnimationsModule,
     ButtonModule,
     DialogModule,
+    DropdownModule,
     HttpClientModule,
     InputNumberModule,
     InputSwitchModule,
@@ -54,6 +57,7 @@ import { FixedTargetWorkloadComponent } from './components/fixed-target-workload
     SliderModule,
     StepsModule,
     FormsModule,
+    SelectButtonModule,
     TabViewModule,
     TableModule,
     RouterModule.forRoot([

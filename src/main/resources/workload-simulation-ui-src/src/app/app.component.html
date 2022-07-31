@@ -2,7 +2,8 @@
   <p-panel [header]="'Active Workloads for ' + systemPreferences.workloadName" [toggleable]="true" [collapsed]="false">
 
     <div *ngFor="let panel of activeWorkloads" class="workload-inst" [ngClass]="currentData[panel].workloadId">
-      <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false">
+      <!-- <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false"> -->
+        <p-panel [header]="currentData[panel].description " [toggleable]="true" [collapsed]="false">
         <ng-template pTemplate="icons">
           <button pButton class="p-panel-header-icon p-link" (click)="menu.toggle($event)">
               <span class="pi pi-cog"></span>
@@ -106,10 +107,12 @@
                     <div class="col-3 align-self-center" style="display: inline-block; text-align: right;">
                       <label [for]="workload.workloadId+'-'+param.name">{{param.name}}:</label>
                     </div>
+                    <!-- <p-selectButton id="auth" [options]="options" [(ngModel)]="test"></p-selectButton> -->
                     <div class="col-9" style="display: inline-block">
                       <p-inputNumber *ngIf="param.type == 'NUMBER'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]" [min]="param.minValue" [max]="param.maxValue"></p-inputNumber>
                       <p-inputSwitch *ngIf="param.type == 'BOOLEAN'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-inputSwitch>
-                      <input *ngIf="param.type == 'STRING'" type="text" pInputText [id]="workload.workloadId+'-'+param.name" style="width: 100%;" [name]="workload.workloadId+'-'+param.name" ngDefaultControl [(ngModel)]="workloadValues[workload.workloadId][param.name]"/>
+                      <p-dropdown *ngIf="param.type == 'STRING' && param.choices" [options]="param.choices" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-dropdown>
+                      <input *ngIf="param.type == 'STRING' && !param.choices" type="text" pInputText [id]="workload.workloadId+'-'+param.name" style="width: 100%;" [name]="workload.workloadId+'-'+param.name" ngDefaultControl [(ngModel)]="workloadValues[workload.workloadId][param.name]"/>
                     </div>
                   </div>  
                 </div>
@@ -124,14 +127,14 @@
     
     </p-tabPanel>
     <p-tabPanel header="Active Workloads" leftIcon="fa-solid fa-table">
-      <p-table [value]="workloadResults" dataKey="workloadId" [rowHover]="true" [loading]="activeLoading" responsiveLayout="scroll" [globalFilterFields]="['workloadId','startTime']">
+      <p-table [value]="workloadResults" dataKey="workloadId" [rowHover]="true" [loading]="activeLoading" responsiveLayout="scroll" [globalFilterFields]="['description','startTime']">
         <ng-template pTemplate="header">
           <tr>
-            <th pSortableColumn="workloadId">
+            <th pSortableColumn="description">
               <div class="flex justify-content-between align-items-center">
                 Id
-                <p-sortIcon field="workloadId"></p-sortIcon>
-                <p-columnFilter type="text" field="workloadId" display="menu" class="ml-auto"></p-columnFilter>
+                <p-sortIcon field="description"></p-sortIcon>
+                <p-columnFilter type="text" field="description" display="menu" class="ml-auto"></p-columnFilter>
               </div>
             </th>
             <th pSortableColumn="status">
@@ -154,7 +157,7 @@
         <ng-template pTemplate="body" let-workloadStatus>
           <tr>
             <td>
-              <span class="p-column-title">WorkloadId</span>{{workloadStatus.workloadId}}
+              <span class="p-column-title">Description</span>{{workloadStatus.description}}
             </td>
             <td>
               <span class="p-column-title">Status</span>{{workloadStatus.status}}

@@ -1,6 +1,8 @@
 package com.yugabyte.simulation.workload;
 
+import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.TimerResult;
+import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.exception.MultipleAggregationWorkloadException;
 import com.yugabyte.simulation.services.ServiceManager;
 
@@ -61,5 +63,11 @@ public final class AggregationWorkloadType extends WorkloadType {
 	@Override
 	public WorkloadTypeInstance createInstance(ServiceManager serviceManager) {
 		return new AggregationWorkloadInstanceType(serviceManager);
+	}
+
+	@Override
+	public WorkloadTypeInstance createInstance(ServiceManager serviceManager, WorkloadDesc workload,
+			ParamValue[] params) {
+		throw new IllegalAccessError("Method AggregationWorkloadType.createInstance(serviceManager, workload, params) is not implemented by design");
 	}
 }

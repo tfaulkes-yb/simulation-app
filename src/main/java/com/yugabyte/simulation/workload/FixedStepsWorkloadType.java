@@ -1,6 +1,8 @@
 package com.yugabyte.simulation.workload;
 
+import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.TimerResult;
+import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.dao.WorkloadResult;
 import com.yugabyte.simulation.services.ExecutionStatus;
 import com.yugabyte.simulation.services.ServiceManager;
@@ -49,9 +51,10 @@ public class FixedStepsWorkloadType extends WorkloadType {
 		private final WorkloadStep[] workloadSteps;
 		private volatile int currentStepNumber = 0;
 		private Thread workerThread;
+
 		
-		public FixedStepWorkloadInstance(ServiceManager serviceManager) {
-			super(serviceManager);
+		public FixedStepWorkloadInstance(ServiceManager serviceManager, WorkloadDesc workload, ParamValue[] params) {
+			super(serviceManager, workload, params);
 			if (steps != null) {
 				workloadSteps = new WorkloadStep[steps.length];
 				for (int i = 0; i < steps.length; i++) {
@@ -64,6 +67,9 @@ public class FixedStepsWorkloadType extends WorkloadType {
 					workloadSteps[i] = new WorkloadStep(stepList[i].stepName);
 				}
 			}
+		}
+		public FixedStepWorkloadInstance(ServiceManager serviceManager) {
+			this(serviceManager, null, null);
 		}
 		
 		@Override
@@ -178,6 +184,12 @@ public class FixedStepsWorkloadType extends WorkloadType {
 	@Override
 	public FixedStepWorkloadInstance createInstance(ServiceManager serviceManager) {
 		return new FixedStepWorkloadInstance(serviceManager);
+	}
+
+	@Override
+	public WorkloadTypeInstance createInstance(ServiceManager serviceManager, WorkloadDesc workload,
+			ParamValue[] params) {
+		return new FixedStepWorkloadInstance(serviceManager, workload, params);
 	}
 	
 }

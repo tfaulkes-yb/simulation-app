@@ -9,4 +9,5 @@ export interface WorkloadResult {
     endTime : number;
     status : string;
     results : TimingPoint[];
+    description : string;
 }

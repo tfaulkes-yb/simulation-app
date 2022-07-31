@@ -56,6 +56,9 @@ export class AppComponent implements AfterViewInit, OnInit {
   valuesComputed = false;
   selected : boolean[] = [];
 
+  options =['first', 'second', 'third'];
+  test : any;
+
   activeLoading : boolean = false;
   workloadResults : WorkloadResult[] = [];
 
@@ -119,7 +122,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     let control = evt.originalEvent.srcElement.closest('.workload-inst');
     let classes = control.classList;
     for (const thisClass of classes) {
-      if (thisClass.match(/^[A-Z]+_\d+$/)) {
+      if (thisClass.match(/^[A-Z_]+_\d+$/)) {
         return thisClass;
       }
     }

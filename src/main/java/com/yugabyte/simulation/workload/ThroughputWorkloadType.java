@@ -12,11 +12,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.yugabyte.simulation.dao.ParamValue;
 import com.yugabyte.simulation.dao.TimerResult;
+import com.yugabyte.simulation.dao.WorkloadDesc;
 import com.yugabyte.simulation.services.ExecutionStatus;
 import com.yugabyte.simulation.services.ServiceManager;
 import com.yugabyte.simulation.services.Timer;
 import com.yugabyte.simulation.services.TimerService;
+import com.yugabyte.simulation.workload.FixedTargetWorkloadType.FixedTargetWorkloadInstance;
 
 public class ThroughputWorkloadType extends WorkloadType {
 	
@@ -297,6 +300,10 @@ public class ThroughputWorkloadType extends WorkloadType {
 		private CallbackHandler threadInitializationHandler = null;
 		private Class<?> threadDataClass;
 		
+		public ThroughputWorkloadInstance(ServiceManager serviceManager, WorkloadDesc workload, ParamValue[] params) {
+			super(serviceManager, workload, params);
+		}
+
 		public ThroughputWorkloadInstance(ServiceManager serviceManager) {
 			super(serviceManager);
 		}
@@ -397,5 +404,17 @@ public class ThroughputWorkloadType extends WorkloadType {
 	@Override
 	public ThroughputWorkloadInstance createInstance(ServiceManager serviceManager) {
 		return new ThroughputWorkloadInstance(serviceManager);
+	}
+
+	@Override
+	public WorkloadTypeInstance createInstance(ServiceManager serviceManager, WorkloadDesc workload,
+			ParamValue[] params) {
+		
+		if (workload != null && params != null) {
+			return new ThroughputWorkloadInstance(serviceManager, workload, params);
+		}
+		else {
+			return new ThroughputWorkloadInstance(serviceManager);
+		}
 	}
 }

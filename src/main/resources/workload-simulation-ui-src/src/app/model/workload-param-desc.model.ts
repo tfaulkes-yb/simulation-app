@@ -6,4 +6,5 @@ export interface WorkloadParamDesc {
     minValue : number;
     maxValue : number;
     defaultValue : ParamValue;
+    choices : String[];
 }

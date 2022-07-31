@@ -30,11 +30,8 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 		return "New Format Workload";
 	}
 
-	private static final String CREATE_SCHEMA =
-			"create schema if not exists psuser;";
-	
 	private static final String CREATE_TABLE = 
-			"create table if not exists psuser.newsletter_subscriptions ("
+			"create table if not exists newsletter_subscriptions ("
 			+ "subscription_id bigint not null, "
 			+ "cust_id bigint not null,"
 			+ "mpid bigint not null,"
@@ -48,14 +45,14 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 			+ "constraint newsletter_subscriptions_pk primary key (cust_id, mcode)"
 			+ ") split into 1 tablets;";
 			
-	private final String DROP_TABLE = "drop table if exists psuser.newsletter_subscriptions;";
+	private final String DROP_TABLE = "drop table if exists newsletter_subscriptions;";
 	
-	private final String CREATE_INDEX = "create index newsletter_subscriptions_id on psuser.newsletter_subscriptions ( subscription_id );";
+	private final String CREATE_INDEX = "create index newsletter_subscriptions_id on newsletter_subscriptions ( subscription_id );";
 
-	private final String QUERY = "select SUBSCRIPTION_ID, CUST_ID, MCODE, MPID, SUBSCRIBED_IND, OPT_IN_DATE, OPT_OUT_DATE, OPT_IN_SOURCE from PSUSER.NEWSLETTER_SUBSCRIPTIONS where CUST_ID = ? and SUBSCRIBED_IND = 1 /** SportyApi **/";
+	private final String QUERY = "select SUBSCRIPTION_ID, CUST_ID, MCODE, MPID, SUBSCRIBED_IND, OPT_IN_DATE, OPT_OUT_DATE, OPT_IN_SOURCE from NEWSLETTER_SUBSCRIPTIONS where CUST_ID = ? and SUBSCRIBED_IND = 1 /** SportyApi **/";
 	
 	private final String INSERT = 
-			"insert into psuser.newsletter_subscriptions ("
+			"insert into newsletter_subscriptions ("
 			+ "subscription_id, cust_id, mpid, mcode, subscribed_ind,"
 			+ "opt_in_date, opt_out_date, opt_in_source)"
 			+ " values "
@@ -78,7 +75,6 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 					.onInvoke((runner, params) -> {
 						runner.newFixedStepsInstance(
 							new Step("Drop Table", (a,b) -> jdbcTemplate.execute(DROP_TABLE)),	
-							new Step("Create Schema", (a,b) -> jdbcTemplate.execute(CREATE_SCHEMA)),
 							new Step("Create Table", (a,b) -> jdbcTemplate.execute(CREATE_TABLE)),	
 							new Step("Create Index", (a,b) -> jdbcTemplate.execute(CREATE_INDEX))	
 						)
@@ -110,8 +106,8 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 
 				new WorkloadDesc(
 						WorkloadType.RUN_SIMULATION.toString(),
-						"Unbounded Simulation",
-						"Run a simulation of a simple table",
+						"Simulation",
+						"Run a simulation of a simple table with finie bounds",
 						new WorkloadParamDesc("Invocations", 1, Integer.MAX_VALUE, 1000),
 						new WorkloadParamDesc("Delay", 0, 1000000, 0),
 						new WorkloadParamDesc("Threads", 1, 500, 32)
@@ -130,7 +126,7 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 				
 				new WorkloadDesc(
 						WorkloadType.UNBOUNDED_SIMULATION.toString(),
-						"Simulation",
+						"Unbounded Simulation",
 						"Run a simulation of a simple table",
 						new WorkloadParamDesc("TPS", 1, Integer.MAX_VALUE, 1000),
 						new WorkloadParamDesc("MaxThreads", 1, 500, 32)
