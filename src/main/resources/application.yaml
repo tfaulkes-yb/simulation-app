@@ -1,14 +1,13 @@
 spring:
-  workload: ${workload:teslaWorkload}
+  workload: ${workload:genericWorkload}
   jpa:
     open-in-view: false
   flyway:
     enabled: false
   datasource:
     hikari:
-#      username: ${user:yugabyte}
-      username: yugabyte
-      password: ${password:yugabyte}
+      username: ${dbuser:yugabyte}
+      password: ${dbpassword:yugabyte}
       connection-init-sql: 'set yb_read_from_followers to true;'
       maximumPoolSize: ${max-pool-size:10}
       maxLifeTime: ${max-life-time:3600000}
