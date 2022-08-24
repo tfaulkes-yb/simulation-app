@@ -3,7 +3,7 @@
 
     <div *ngFor="let panel of activeWorkloads" class="workload-inst" [ngClass]="currentData[panel].workloadId">
       <!-- <p-panel [header]="currentData[panel].workloadId" [toggleable]="true" [collapsed]="false"> -->
-        <p-panel [header]="currentData[panel].description " [toggleable]="true" [collapsed]="false">
+        <p-panel [header]="currentData[panel].description" [toggleable]="true" [collapsed]="false">
         <ng-template pTemplate="icons">
           <button pButton class="p-panel-header-icon p-link" (click)="menu.toggle($event)">
               <span class="pi pi-cog"></span>

@@ -9,7 +9,7 @@ spring:
 #      username: ${user:yugabyte}
       username: yugabyte
       password: ${password:yugabyte}
-      connection-init-sql: 'set yb_read_from_followers to true;'
+#      connection-init-sql: 'set yb_read_from_followers to true;'
       maximumPoolSize: ${max-pool-size:10}
       maxLifeTime: ${max-life-time:3600000}
       data-source-class-name: com.yugabyte.ysql.YBClusterAwareDataSource
@@ -21,13 +21,14 @@ spring:
         #ssl: ${ssl:false}
         #sslmode: ${sslmode:disable}
         #sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
+        additionalEndpoints: ${additionalEndpoints:127.0.0.2:5433,127.0.03:5433}
 
 logging.level:
   root: ERROR
-  java.sql: DEBUG
+  java.sql: ERROR
   com.zaxxer.hikari: TRACE
-  com.yugabyte: DEBUG
-  com.yugabyte.simulation.workload: DEBUG
+  com.yugabyte: ERROR
+  com.yugabyte.simulation.workload: ERROR
   org.springframework.jdbc.core: ERROR 
     
 server:

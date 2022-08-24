@@ -2,6 +2,7 @@ package com.yugabyte.simulation.dao;
 
 import java.io.IOException;
 import java.security.InvalidParameterException;
+import java.text.NumberFormat;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -147,8 +148,8 @@ public class ParamValue {
 	public String toString() {
 		switch (type) {
 		case BOOLEAN: return Boolean.toString(this.boolValue);
-		case NUMBER: return Integer.toString(this.intValue);
-		case STRING: return "'" + this.stringValue + "'";
+		case NUMBER:  return NumberFormat.getInstance().format(this.intValue);
+		case STRING:  return "'" + this.stringValue + "'";
 		default: return "";
 		}
 	}

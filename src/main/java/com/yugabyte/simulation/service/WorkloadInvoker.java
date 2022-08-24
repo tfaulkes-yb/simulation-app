@@ -31,6 +31,6 @@ public class WorkloadInvoker {
 	}
 	
 	public ThroughputWorkloadInstance newThroughputWorkloadInstance() {
-		return new ThroughputWorkloadType().createInstance(serviceManager);
+		return new ThroughputWorkloadType().createInstance(serviceManager, this.workload, this.params);
 	}
 }
