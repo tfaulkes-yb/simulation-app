@@ -63,6 +63,13 @@
 			<artifactId>json</artifactId>
 			<version>20211205</version>
 		</dependency>
+		<dependency>
+			<groupId>com.yugabyte</groupId>
+			<artifactId>java-driver-core</artifactId>
+			<version>4.6.0-yb-11</version>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>
@@ -90,5 +97,19 @@
             </plugin>
         </plugins>
 	</build>
-
+	<licenses>
+		<license>
+			<name>The Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<name>YugaByte Development Team</name>
+			<email>info@yugabyte.com</email>
+			<organization>YugaByte, Inc.</organization>
+			<organizationUrl>https://www.yugabyte.com</organizationUrl>
+		</developer>
+	</developers>
 </project>

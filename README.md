@@ -16,6 +16,17 @@ java -DXmx=32g -Dspring.datasource.hikari.maximumPoolSize=100 -jar yb-workload-s
 -Dssl=true [default: false]
 -Dsslmode=verify-full [default: disable]
 -Dsslrootcert=<certificatepath> 
+-Dworkload=genericWorkload
+```
+
+### Additional parameters if you wish to run YCQL workload
+```
+-Dworkload=genericCassandraWorkload
+-Dspring.data.cassandra.contact-points=<host ip> 
+-Dspring.data.cassandra.port=9042 
+-Dspring.data.cassandra.local-datacenter=<datacenter> [ex. us-east-2 ]
+-Dspring.data.cassandra.userid=cassandra 
+-Dspring.data.cassandra.password=<cassandra-password>
 ```
 
 ### Running the app from Docker image (Intuit Demo)

@@ -20,6 +20,13 @@ spring:
         #ssl: ${ssl:false}
         #sslmode: ${sslmode:disable}
         #sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
+  data:
+    cassandra:
+      local-datacenter: ${datacenter_c:DC1}
+      port: ${port_c:9042}
+      contact-points: ${node_c:127.0.0.1}
+      userid: ${userid_c:cassandra}
+      password: ${password_c:yugabyte}
 
 logging.level:
   root: ERROR

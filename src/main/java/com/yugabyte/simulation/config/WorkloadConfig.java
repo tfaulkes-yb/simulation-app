@@ -45,4 +45,11 @@ public class WorkloadConfig {
     public WorkloadSimulation genericWorkload(){
         return new GenericWorkload();
     }
+
+    @Bean(name="GenericCassandraWorkload")
+    public WorkloadSimulation genericCassandraWorkload(){
+        return new GenericCassandraWorkload();
+    }
+
+
 }
