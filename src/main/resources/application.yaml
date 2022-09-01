@@ -20,6 +20,7 @@ spring:
         #ssl: ${ssl:false}
         #sslmode: ${sslmode:disable}
         #sslrootcert: ${sslrootcert:~/.ssh/ybcloudcert/root.crt}
+        additionalEndpoints: ${additionalEndpoints:127.0.0.2:5433,127.0.03:5433}
   data:
     cassandra:
       local-datacenter: ${datacenter_c:DC1}
@@ -30,10 +31,10 @@ spring:
 
 logging.level:
   root: ERROR
-  java.sql: DEBUG
+  java.sql: ERROR
   com.zaxxer.hikari: TRACE
-  com.yugabyte: DEBUG
-  com.yugabyte.simulation.workload: DEBUG
+  com.yugabyte: ERROR
+  com.yugabyte.simulation.workload: ERROR
   org.springframework.jdbc.core: ERROR 
     
 server:

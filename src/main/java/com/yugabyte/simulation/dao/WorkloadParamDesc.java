@@ -7,8 +7,9 @@ public class WorkloadParamDesc {
 	private final int maxValue;
 	private final ParamValue defaultValue;
 	private final String[] choices;
+	private final String sliderLabel;
 
-	public WorkloadParamDesc(String name, ParamType type, int minValue, int maxValue, ParamValue defaultValue) {
+	public WorkloadParamDesc(String name, ParamType type, int minValue, int maxValue, ParamValue defaultValue, String sliderLabel) {
 		super();
 		this.name = name;
 		this.type = type;
@@ -16,6 +17,7 @@ public class WorkloadParamDesc {
 		this.maxValue = maxValue;
 		this.defaultValue = defaultValue;
 		this.choices = null;
+		this.sliderLabel = sliderLabel;
 	}
 	
 	/**
@@ -33,6 +35,7 @@ public class WorkloadParamDesc {
 		this.choices = choices;
 		this.minValue = 0;
 		this.maxValue = 0;
+		this.sliderLabel = null;
 		if (defaultChoiceIndex >= 0 && defaultChoiceIndex < choices.length) {
 			defaultValue = new ParamValue(choices[defaultChoiceIndex]);
 		}
@@ -42,11 +45,11 @@ public class WorkloadParamDesc {
  	}
 	
 	public WorkloadParamDesc(String name, int minValue, int maxValue) {
-		this(name, ParamType.NUMBER, minValue, maxValue, null);
+		this(name, ParamType.NUMBER, minValue, maxValue, null, null);
 	}
 
 	public WorkloadParamDesc(String name, ParamType type, ParamValue defaultValue) {
-		this(name, type, Integer.MIN_VALUE, Integer.MAX_VALUE, defaultValue);
+		this(name, type, Integer.MIN_VALUE, Integer.MAX_VALUE, defaultValue, null);
 	}
 	
 	public WorkloadParamDesc(String name, ParamType type) {
@@ -58,15 +61,19 @@ public class WorkloadParamDesc {
 	}
 	
 	public WorkloadParamDesc(String name, boolean defaultValue) {
-		this(name, ParamType.BOOLEAN, Integer.MIN_VALUE, Integer.MAX_VALUE, new ParamValue(defaultValue));
+		this(name, ParamType.BOOLEAN, Integer.MIN_VALUE, Integer.MAX_VALUE, new ParamValue(defaultValue), null);
 	}
 	
 	public WorkloadParamDesc(String name, String defaultValue) {
-		this(name, ParamType.STRING, Integer.MIN_VALUE, Integer.MAX_VALUE, new ParamValue(defaultValue));
+		this(name, ParamType.STRING, Integer.MIN_VALUE, Integer.MAX_VALUE, new ParamValue(defaultValue), null);
 	}
 	
 	public WorkloadParamDesc(String name, int minValue, int maxValue, int defaultValue) {
-		this(name, ParamType.NUMBER, minValue, maxValue, new ParamValue(defaultValue));
+		this(name, ParamType.NUMBER, minValue, maxValue, new ParamValue(defaultValue), null);
+	}
+
+	public WorkloadParamDesc(String name, int minValue, int maxValue, int defaultValue, String sliderLabel) {
+		this(name, ParamType.NUMBER, minValue, maxValue, new ParamValue(defaultValue), sliderLabel);
 	}
 
 	public String getName() {

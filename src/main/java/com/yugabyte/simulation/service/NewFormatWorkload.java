@@ -47,7 +47,7 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 			
 	private final String DROP_TABLE = "drop table if exists newsletter_subscriptions;";
 	
-	private final String CREATE_INDEX = "create index newsletter_subscriptions_id on newsletter_subscriptions ( subscription_id );";
+	private final String CREATE_INDEX = "create index newsletter_subscriptions_id on newsletter_subscriptions ( cust_id );";
 
 	private final String QUERY = "select SUBSCRIPTION_ID, CUST_ID, MCODE, MPID, SUBSCRIBED_IND, OPT_IN_DATE, OPT_OUT_DATE, OPT_IN_SOURCE from NEWSLETTER_SUBSCRIPTIONS where CUST_ID = ? and SUBSCRIBED_IND = 1 /** SportyApi **/";
 	
@@ -92,7 +92,7 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 						jdbcTemplate.setFetchSize(1000);
 	
 						final AtomicLong currentValue = new AtomicLong();
-						jdbcTemplate.query("select max(subscription_id) from psuser.newsletter_subscriptions",
+						jdbcTemplate.query("select max(subscription_id) from newsletter_subscriptions",
 								(rs) -> { currentValue.set(rs.getLong(1)+1); } );
 
 						runner.newFixedTargetInstance()
@@ -162,7 +162,7 @@ public class NewFormatWorkload extends WorkloadSimulationBase implements Workloa
 	}
 	
 	private void runQueryNoTxn() {
-		int custNum = ThreadLocalRandom.current().nextInt(1000, 20000000);
+		int custNum = ThreadLocalRandom.current().nextInt(1000, 20_000_000);
 		jdbcTemplate.query(QUERY, new Object[] {custNum}, new int[] {Types.INTEGER},
 			new RowCallbackHandler() {
 				@Override

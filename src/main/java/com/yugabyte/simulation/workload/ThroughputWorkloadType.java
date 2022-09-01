@@ -407,7 +407,7 @@ public class ThroughputWorkloadType extends WorkloadType {
 	}
 
 	@Override
-	public WorkloadTypeInstance createInstance(ServiceManager serviceManager, WorkloadDesc workload,
+	public ThroughputWorkloadInstance createInstance(ServiceManager serviceManager, WorkloadDesc workload,
 			ParamValue[] params) {
 		
 		if (workload != null && params != null) {
