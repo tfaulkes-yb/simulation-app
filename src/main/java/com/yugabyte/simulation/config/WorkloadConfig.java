@@ -17,11 +17,6 @@ import com.yugabyte.simulation.service.WorkloadSimulation;
 
 @Configuration
 public class WorkloadConfig {
-    @Bean(name="AmexWorkload")
-    public WorkloadSimulation amexWorkload(){
-        return new AmexWorkload();
-    }
-
     @Bean(name="SimpleSelectWorkload")
     public WorkloadSimulation simpleSelectWorkload(){
         return new SimpleSelectWorkload();
@@ -30,6 +25,29 @@ public class WorkloadConfig {
     @Bean(name="PitrDemoWorkload")
     public WorkloadSimulation pitrDemoWorkload(){
         return new PitrSqlDemoWorkload();
+    }
+
+    @Bean(name="NewFormatWorkload")
+    public WorkloadSimulation newFormatWorkload(){
+        return new NewFormatWorkload();
+    }
+
+    @Bean(name="GenericWorkload")
+    public WorkloadSimulation genericWorkload(){
+        return new GenericWorkload();
+    }
+
+    @Bean(name="GenericCassandraWorkload")
+    public WorkloadSimulation genericCassandraWorkload(){
+        return new GenericCassandraWorkload();
+    }
+
+
+    // ------------------------------------
+    // Customer workloads
+    @Bean(name="AmexWorkload")
+    public WorkloadSimulation amexWorkload(){
+        return new AmexWorkload();
     }
 
     @Bean(name="SonosWorkload")
@@ -50,21 +68,6 @@ public class WorkloadConfig {
     @Bean(name="CbsSportsWorkload")
     public WorkloadSimulation cbsSportsWorkload(){
         return new CbsSportsWorkload();
-    }
-
-    @Bean(name="NewFormatWorkload")
-    public WorkloadSimulation newFormatWorkload(){
-        return new NewFormatWorkload();
-    }
-
-    @Bean(name="GenericWorkload")
-    public WorkloadSimulation genericWorkload(){
-        return new GenericWorkload();
-    }
-
-    @Bean(name="GenericCassandraWorkload")
-    public WorkloadSimulation genericCassandraWorkload(){
-        return new GenericCassandraWorkload();
     }
 
 
