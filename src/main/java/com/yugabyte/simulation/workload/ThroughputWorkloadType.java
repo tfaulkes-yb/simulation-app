@@ -177,7 +177,13 @@ public class ThroughputWorkloadType extends WorkloadType {
 						if (LOGGER.isDebugEnabled()) {
 							LOGGER.debug(String.format("Running too fast, %d / %d = %d\n", this.desiredRate, this.currentThreads, this.desiredRate/this.currentThreads));
 						}
-						this.setThreadDelay(1000 * this.currentThreads / this.desiredRate);
+						// Don't drop the delay all at once as this can lead to oscillation
+						// of the throughput.
+						int predictedThreadDelay = 1000 * this.currentThreads / this.desiredRate;
+						if (predictedThreadDelay >= threadDelay.get()) {
+							// This really should be the case
+							this.setThreadDelay((predictedThreadDelay + threadDelay.get())/2);
+						}
 					}
 					else if (tps < desiredRate) {
 						// we're going too slowly, see if there's any capacity to increase it

@@ -73,6 +73,7 @@ public class WorkloadParamDesc {
 	}
 
 	public WorkloadParamDesc(String name, int minValue, int maxValue, int defaultValue, String sliderLabel) {
+		// NB: For now the value of the slider label is ignored, it's non-falsy precense is enough to trigger the scroll bar.
 		this(name, ParamType.NUMBER, minValue, maxValue, new ParamValue(defaultValue), sliderLabel);
 	}
 
@@ -98,5 +99,9 @@ public class WorkloadParamDesc {
 	
 	public String[] getChoices() {
 		return choices;
+	}
+	
+	public String getSliderLabel() {
+		return sliderLabel;
 	}
 }

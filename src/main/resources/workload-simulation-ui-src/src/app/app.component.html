@@ -107,8 +107,19 @@
                     <div class="col-3 align-self-center" style="display: inline-block; text-align: right;">
                       <label [for]="workload.workloadId+'-'+param.name">{{param.name}}:</label>
                     </div>
-                    <!-- <p-selectButton id="auth" [options]="options" [(ngModel)]="test"></p-selectButton> -->
-                    <div class="col-9" style="display: inline-block">
+                    <div class="col-2" *ngIf="param.type == 'NUMBER' && param.sliderLabel" style="display: inline-block;">
+                      <p-inputNumber style="width: 100%;" [inputStyle]="{'width': '100%'}" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]" [min]="param.minValue" [max]="param.maxValue"></p-inputNumber>  
+                    </div>
+                    <div class="col-1" *ngIf="param.type == 'NUMBER' && param.sliderLabel" style="display: inline-block; text-align: right;">
+                      <span stye="display: inline-block;">{{param.minValue}}</span>
+                    </div>
+                    <div class="col-5" *ngIf="param.type == 'NUMBER' && param.sliderLabel" style="display: inline-block;">
+                      <p-slider stye="display: inline-block;" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]" [min]="param.minValue" [max]="param.maxValue"></p-slider>
+                    </div>
+                    <div class="col-1" *ngIf="param.type == 'NUMBER' && param.sliderLabel" style="display: inline-block;">
+                      <span stye="display: inline-block;">{{param.maxValue}}</span>
+                    </div>
+                    <div class="col-9" style="display: inline-block" *ngIf="!param.sliderLabel">
                       <p-inputNumber *ngIf="param.type == 'NUMBER'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]" [min]="param.minValue" [max]="param.maxValue"></p-inputNumber>
                       <p-inputSwitch *ngIf="param.type == 'BOOLEAN'" [id]="workload.workloadId+'-'+param.name" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-inputSwitch>
                       <p-dropdown *ngIf="param.type == 'STRING' && param.choices" [options]="param.choices" [(ngModel)]="workloadValues[workload.workloadId][param.name]"></p-dropdown>

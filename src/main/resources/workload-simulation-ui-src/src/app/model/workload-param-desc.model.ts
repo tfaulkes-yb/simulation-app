@@ -7,4 +7,5 @@ export interface WorkloadParamDesc {
     maxValue : number;
     defaultValue : ParamValue;
     choices : String[];
+    sliderLabel : String;
 }
