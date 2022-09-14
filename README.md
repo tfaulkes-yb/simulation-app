@@ -60,3 +60,4 @@ Addition JAVA_OPTS parameters: max-pool-size, dbname, port
 ```
 http://<HOSTNAME>:8080
 ```
+# workload-simulation-demo-app
